@@ -1,0 +1,2344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>People Ledger</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/dark.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg:       #0d1117;
+      --surf:     #161b22;
+      --surf2:    #21262d;
+      --surf3:    #2d333b;
+      --border:   #30363d;
+      --border2:  #444c56;
+      --accent:   #58a6ff;
+      --accentd:  #1f6feb;
+      --green:    #3fb950;
+      --red:      #f85149;
+      --text:     #e6edf3;
+      --muted:    #8b949e;
+      --muted2:   #6e7681;
+    }
+
+    html, body { height: 100%; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── Header ───────────────────────────────────────── */
+    .app-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 24px;
+      background: var(--surf);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .logo svg { color: var(--accent); }
+
+    .header-sep { flex: 1; }
+
+    .count-pill {
+      font-size: 12px;
+      color: var(--muted);
+      background: var(--surf2);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 2px 10px;
+    }
+
+    /* ── Buttons ──────────────────────────────────────── */
+    button {
+      font-family: inherit;
+      cursor: pointer;
+      border: none;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 500;
+      padding: 6px 14px;
+      transition: background .12s, opacity .12s;
+    }
+
+    .btn-primary  { background: var(--accentd); color: #fff; }
+    .btn-primary:hover { background: #388bfd; }
+
+    .btn-ghost    { background: transparent; color: var(--muted); border: 1px solid var(--border); }
+    .btn-ghost:hover { background: var(--surf2); color: var(--text); }
+
+    .btn-icon {
+      background: transparent;
+      color: var(--muted2);
+      padding: 2px 6px;
+      line-height: 1;
+      border: 1px solid transparent;
+    }
+    .btn-icon:hover { background: var(--surf3); color: var(--red); border-color: var(--border); }
+
+    .btn-add-loc {
+      background: transparent;
+      color: var(--accent);
+      border: 1px dashed var(--accentd);
+      padding: 4px 12px;
+      font-size: 12px;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .btn-add-loc:hover { background: rgba(88,166,255,.08); }
+
+    /* ── Main ─────────────────────────────────────────── */
+    .app-main {
+      flex: 1;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .ledger {
+      flex: 1;
+      overflow: auto;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border) transparent;
+    }
+    .ledger::-webkit-scrollbar { width: 6px; height: 6px; }
+    .ledger::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    /* ── Person Row ───────────────────────────────────── */
+    .person-row {
+      display: flex;
+      align-items: stretch;
+      background: var(--surf);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      transition: border-color .15s;
+    }
+    .person-row:hover { border-color: var(--border2); }
+
+    .person-meta {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+      padding: 14px 10px;
+      width: 115px;
+      min-width: 115px;
+      border-right: 1px solid var(--border);
+      background: var(--surf2);
+    }
+
+    .avatar {
+      width: 44px; height: 44px;
+      border-radius: 50%;
+      object-fit: cover;
+      flex-shrink: 0;
+    }
+
+    .avatar-init {
+      width: 44px; height: 44px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 15px;
+      color: #fff;
+      flex-shrink: 0;
+    }
+
+    .person-name {
+      font-weight: 600;
+      font-size: 12px;
+      text-align: center;
+      color: var(--text);
+      word-break: break-word;
+      line-height: 1.3;
+    }
+
+    .person-role {
+      font-size: 10px;
+      color: var(--muted);
+      background: var(--surf3);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 1px 7px;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .meta-actions { margin-top: auto; }
+
+    /* ── Gantt Timeline ───────────────────────────────────── */
+    .gantt-inner {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .gantt-row {
+      display: flex;
+      align-items: stretch;
+      border-bottom: 1px solid var(--border);
+    }
+    .gantt-row:last-child { border-bottom: none; }
+
+    .gantt-stub,
+    .gantt-sidebar {
+      width: 130px;
+      min-width: 130px;
+      flex-shrink: 0;
+      position: sticky;
+      left: 0;
+      z-index: 5;
+      border-right: 1px solid var(--border);
+    }
+
+    .gantt-stub { background: var(--bg); }
+
+    .gantt-sidebar {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      padding: 10px 8px;
+      background: var(--surf2);
+    }
+
+    .gantt-name {
+      font-weight: 600;
+      font-size: 11px;
+      text-align: center;
+      color: var(--text);
+      word-break: break-word;
+      line-height: 1.3;
+    }
+
+    .gantt-ruler {
+      flex-shrink: 0;
+      background: var(--bg);
+    }
+
+    .ruler-months {
+      display: flex;
+      height: 22px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .ruler-month {
+      flex-shrink: 0;
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 4px;
+      border-right: 1px solid var(--border);
+      white-space: nowrap;
+      overflow: hidden;
+    }
+
+    .ruler-days { display: flex; height: 22px; }
+
+    .ruler-day {
+      flex-shrink: 0;
+      font-size: 10px;
+      color: var(--muted2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-right: 1px dashed rgba(255,255,255,.05);
+      user-select: none;
+    }
+    .ruler-today  { color: var(--accent); font-weight: 700; }
+    .ruler-weekend { color: var(--muted2); opacity: .5; }
+
+    .gantt-track {
+      position: relative;
+      flex-shrink: 0;
+      min-height: var(--rh, 60px);
+      display: flex;
+      align-items: center;
+      background-image: repeating-linear-gradient(
+        to right,
+        transparent,
+        transparent calc(var(--ppd, 50px) - 1px),
+        rgba(255,255,255,.04) calc(var(--ppd, 50px) - 1px),
+        rgba(255,255,255,.04) var(--ppd, 50px)
+      );
+    }
+    .gantt-row:nth-child(even) .gantt-track    { background-color: rgba(255,255,255,.015); }
+    .gantt-row:nth-child(even) .gantt-sidebar  { background: var(--surf); }
+
+    .today-line {
+      position: absolute;
+      top: 0; bottom: 0;
+      width: 2px;
+      background: var(--accentd);
+      opacity: .45;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* Event bars */
+    .ev-bar {
+      position: absolute;
+      height: 34px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 0 26px 0 8px;
+      font-size: 11px;
+      font-weight: 500;
+      color: #fff;
+      overflow: hidden;
+      white-space: nowrap;
+      cursor: default;
+      transition: filter .12s;
+      z-index: 2;
+      box-shadow: 0 1px 4px rgba(0,0,0,.35);
+    }
+    .ev-bar:hover { filter: brightness(1.18); }
+
+    .ev-worksite { background: #1f6feb; }
+    .ev-home     { background: #238636; }
+    .ev-travel   { background: #b45309; }
+
+    .ev-icon { font-size: 13px; flex-shrink: 0; }
+    .ev-lbl  { overflow: hidden; text-overflow: ellipsis; min-width: 0; flex: 1; }
+
+    .ev-del {
+      position: absolute;
+      right: 4px; top: 50%;
+      transform: translateY(-50%);
+      background: rgba(0,0,0,.4);
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      width: 16px; height: 16px;
+      font-size: 10px;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      cursor: pointer;
+      line-height: 1;
+      font-family: inherit;
+    }
+    .ev-bar:hover .ev-del { display: flex; }
+    .ev-del:hover { background: rgba(248,81,73,.85); }
+
+    .ev-peer-badge {
+      flex-shrink: 0;
+      background: rgba(0,0,0,.35);
+      border-radius: 999px;
+      font-size: 9px;
+      padding: 0 5px;
+      line-height: 16px;
+      font-weight: 600;
+      letter-spacing: .02em;
+    }
+
+    /* ── Worksite group rows ──────────────────────────── */
+    .gantt-section-hdr-row {
+      display: flex;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      border-top: 2px solid var(--border2);
+    }
+    .gantt-section-hdr {
+      position: sticky;
+      left: 0;
+      padding: 4px 12px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--muted2);
+      background: var(--bg);
+      white-space: nowrap;
+      user-select: none;
+    }
+    .gantt-section-hdr-row:first-child { border-top: none; }
+
+    .gantt-ws-sidebar {
+      background: #0f1c2e !important;
+      border-right-color: #2a3a5c !important;
+      justify-content: center !important;
+    }
+    .gantt-ws-badge {
+      font-size: 16px;
+      line-height: 1;
+    }
+    .gantt-ws-name {
+      font-weight: 700;
+      font-size: 11px;
+      color: #7ab8ff;
+      text-align: center;
+      word-break: break-word;
+      line-height: 1.3;
+    }
+    .gantt-ws-city {
+      font-size: 10px;
+      color: var(--muted);
+      text-align: center;
+    }
+    .gantt-ws-dates {
+      font-size: 9px;
+      color: var(--muted2);
+      text-align: center;
+    }
+    .btn-edit-ws {
+      margin-top: 4px;
+      background: transparent;
+      border: 1px solid var(--border2);
+      color: var(--muted);
+      font-size: 10px;
+      font-family: inherit;
+      border-radius: 4px;
+      padding: 2px 8px;
+      cursor: pointer;
+    }
+    .btn-edit-ws:hover { background: var(--surf3); color: var(--text); }
+
+    /* Worksite track — flexbox column, height = n * --rh */
+    .gantt-ws-track {
+      position: relative;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      background-image: repeating-linear-gradient(
+        to right,
+        transparent,
+        transparent calc(var(--ppd, 50px) - 1px),
+        rgba(255,255,255,.04) calc(var(--ppd, 50px) - 1px),
+        rgba(255,255,255,.04) var(--ppd, 50px)
+      );
+      background-color: rgba(31,111,235,.04);
+    }
+    .gantt-ws-subrow {
+      position: relative;
+      height: var(--rh, 60px);
+      flex-shrink: 0;
+      border-bottom: 1px solid rgba(255,255,255,.06);
+    }
+    .gantt-ws-subrow:last-child { border-bottom: none; }
+
+    /* Continuous spanning bar for a person inside a worksite */
+    .ws-bar {
+      position: absolute;
+      top: calc(var(--rh,60px) * .1);
+      height: calc(var(--rh,60px) * .8);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 0 12px 0 6px;
+      font-size: 11px;
+      font-weight: 500;
+      color: #fff;
+      overflow: hidden;
+      white-space: nowrap;
+      background: rgba(31,111,235,.55);
+      border: 1px solid rgba(88,166,255,.45);
+      box-shadow: 0 1px 4px rgba(0,0,0,.3);
+    }
+    .ws-bar-av {
+      width: calc(var(--rh,60px) * .55);
+      height: calc(var(--rh,60px) * .55);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: calc(var(--rh,60px) * .2);
+      font-weight: 700;
+      flex-shrink: 0;
+      color: #fff;
+      overflow: hidden;
+      object-fit: cover;
+    }
+    .ws-bar-av img {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      object-fit: cover;
+      display: block;
+    }
+    .ws-bar-name { overflow: hidden; text-overflow: ellipsis; min-width: 0; flex: 1; }
+    .ws-bar-role { font-size: 10px; color: rgba(255,255,255,.6); flex-shrink: 0; }
+
+    /* Travel group sidebar (amber) */
+    .gantt-tr-sidebar {
+      background: #1e1208 !important;
+      border-right-color: #5c3a1a !important;
+      justify-content: center !important;
+    }
+    .gantt-tr-name  { font-weight: 700; font-size: 11px; color: #f0a04a; text-align: center; word-break: break-word; line-height: 1.3; }
+    .gantt-tr-city  { font-size: 10px; color: var(--muted); text-align: center; }
+    .gantt-tr-dates { font-size: 9px; color: var(--muted2); text-align: center; }
+    .gantt-tr-track {
+      background-color: rgba(180,83,9,.04) !important;
+      background-image: repeating-linear-gradient(
+        to right, transparent,
+        transparent calc(var(--ppd,50px) - 1px),
+        rgba(255,255,255,.04) calc(var(--ppd,50px) - 1px),
+        rgba(255,255,255,.04) var(--ppd,50px)
+      );
+    }
+    .ws-bar-travel {
+      background: rgba(180,83,9,.55) !important;
+      border: 1px solid rgba(240,160,74,.45) !important;
+    }
+
+    /* Slot demand row (thin bar at top of ws track) */
+    .gantt-ws-demandrow {
+      position: relative;
+      min-height: 24px;
+      flex-shrink: 0;
+      background: rgba(0,0,0,.18);
+      border-bottom: 1px solid rgba(255,255,255,.08);
+    }
+    .ws-slot-bar {
+      position: absolute;
+      top: 3px;
+      height: 18px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 0 7px;
+      font-size: 10px;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      cursor: default;
+    }
+    .ws-slot-bar.unfilled { background: rgba(248,81,73,.12); border: 1px dashed rgba(248,81,73,.55); color: #f85149; }
+    .ws-slot-bar.partial  { background: rgba(180,83,9,.18);  border: 1px dashed rgba(240,160,74,.55); color: #f0a04a; }
+    .ws-slot-bar.filled   { background: rgba(35,134,54,.2);  border: 1px dashed rgba(63,185,80,.55);  color: #56d364; }
+
+    /* Slot fill dots in sidebar */
+    .ws-slot-reqs   { margin-top: 3px; display: flex; flex-direction: column; gap: 2px; width: 100%; }
+    .ws-slot-req    { font-size: 9px; color: var(--muted2); display: flex; align-items: center; gap: 3px; justify-content: center; }
+    .ws-fill-dot    { display: inline-block; width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+    .ws-fill-dot.f  { background: #3fb950; }
+    .ws-fill-dot.e  { background: var(--border2); }
+
+    /* Slot rows in edit modal */
+    .ws-slot-row {
+      display: grid;
+      grid-template-columns: 1fr 44px 110px 110px 24px;
+      gap: 4px;
+      align-items: start;
+    }
+    .ws-slot-row input[type="text"],
+    .ws-slot-row input[type="number"],
+    .ws-slot-row input[type="date"] {
+      background: var(--surf2);
+      border: 1px solid var(--border2);
+      border-radius: 4px;
+      color: var(--text);
+      padding: 5px 6px;
+      font-size: 11px;
+      font-family: inherit;
+      width: 100%;
+      min-width: 0;
+    }
+    .ws-slot-row input:focus { outline: none; border-color: var(--accent); }
+    .ws-slot-row input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(.7); }
+
+    .btn-add-ev {
+      position: absolute;
+      right: 8px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: transparent;
+      color: var(--accent);
+      border: 1px dashed var(--accentd);
+      border-radius: 6px;
+      padding: 3px 10px;
+      font-size: 11px;
+      font-family: inherit;
+      cursor: pointer;
+      white-space: nowrap;
+      opacity: 0;
+      transition: opacity .15s, background .12s;
+      z-index: 3;
+    }
+    .gantt-row:hover .btn-add-ev { opacity: 1; }
+    .btn-add-ev:hover { background: rgba(88,166,255,.08); }
+
+    /* Zoom controls */
+    .zoom-controls {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      background: var(--surf2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 2px 2px;
+    }
+    .zoom-btn {
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1;
+      padding: 2px 8px;
+      cursor: pointer;
+      border-radius: 4px;
+      font-family: inherit;
+    }
+    .zoom-btn:hover { background: var(--surf3); color: var(--text); }
+    .zoom-label {
+      font-size: 11px;
+      color: var(--muted);
+      min-width: 46px;
+      text-align: center;
+    }
+
+    /* Event type selector */
+    .ev-type-sel { display: flex; gap: 6px; }
+    .ev-type-btn {
+      flex: 1;
+      padding: 8px 4px;
+      border-radius: 8px;
+      border: 2px solid var(--border2);
+      background: var(--surf2);
+      color: var(--muted);
+      font-size: 12px;
+      font-family: inherit;
+      cursor: pointer;
+      transition: all .12s;
+      text-align: center;
+    }
+    .ev-type-btn:hover { background: var(--surf3); color: var(--text); }
+    .ev-type-btn.active[data-type="worksite"] { border-color: #1f6feb; background: rgba(31,111,235,.15); color: #7ab8ff; }
+    .ev-type-btn.active[data-type="home"]     { border-color: #238636; background: rgba(35,134,54,.15);  color: #56d364; }
+    .ev-type-btn.active[data-type="travel"]   { border-color: #b45309; background: rgba(180,83,9,.15);   color: #f0a04a; }
+
+    /* shared peers hint */
+    .ev-shared-peers {
+      margin-top: 6px;
+      font-size: 11px;
+      color: var(--muted);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      align-items: center;
+    }
+    .ev-shared-peers.hidden { display: none; }
+    .ev-peer-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: var(--surf3);
+      border: 1px solid var(--border2);
+      border-radius: 999px;
+      padding: 1px 8px;
+      font-size: 11px;
+    }
+
+    .modal-wide { width: 500px; }
+
+    /* ── Empty State ──────────────────────────────────── */
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      padding: 80px 20px;
+      color: var(--muted);
+      text-align: center;
+    }
+    .empty-icon { font-size: 52px; opacity: .35; }
+    .empty-state h2 { font-size: 20px; color: var(--text); }
+    .empty-state p  { font-size: 14px; max-width: 320px; }
+
+    /* ── Modal ────────────────────────────────────────── */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(1,4,9,.78);
+      backdrop-filter: blur(3px);
+      z-index: 50;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .modal {
+      background: var(--surf);
+      border: 1px solid var(--border2);
+      border-radius: 12px;
+      width: 420px;
+      max-width: 100%;
+      box-shadow: 0 24px 60px rgba(0,0,0,.55);
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+    }
+    .modal-header h3 { font-size: 15px; font-weight: 600; }
+
+    .modal-body   { padding: 20px; }
+    .modal-footer { display: flex; gap: 8px; justify-content: flex-end; padding: 0 20px 16px; }
+
+    .form-row { margin-bottom: 16px; }
+    .form-row:last-child { margin-bottom: 0; }
+
+    .form-row label {
+      display: block;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--muted);
+      margin-bottom: 5px;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+    }
+
+    .form-row input[type="text"],
+    .form-row input[type="date"],
+    .form-row select {
+      width: 100%;
+      background: var(--surf2);
+      border: 1px solid var(--border2);
+      border-radius: 6px;
+      color: var(--text);
+      padding: 8px 12px;
+      font-size: 14px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color .12s;
+    }
+    .form-row input:focus { border-color: var(--accent); }
+    .form-row input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(.7); cursor: pointer; }
+
+    /* Photo row */
+    .photo-row {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+    }
+
+    .photo-preview-wrap { flex-shrink: 0; }
+
+    .photo-preview {
+      width: 56px; height: 56px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid var(--border2);
+      display: block;
+    }
+
+    .photo-preview-init {
+      width: 56px; height: 56px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 18px;
+      color: #fff;
+      border: 2px solid var(--border2);
+    }
+
+    .photo-inputs { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+
+    .or-divider {
+      font-size: 10px;
+      color: var(--muted2);
+      text-align: center;
+    }
+
+    .file-btn-wrap { position: relative; }
+
+    .file-label {
+      display: block;
+      text-align: center;
+      padding: 6px;
+      background: var(--surf3);
+      border: 1px dashed var(--border2);
+      border-radius: 6px;
+      color: var(--muted);
+      font-size: 12px;
+      cursor: pointer;
+      transition: background .12s;
+      user-select: none;
+    }
+    .file-label:hover { background: var(--surf2); }
+
+    .file-input {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+    }
+
+    /* ── Flatpickr overrides ──────────────────────────────────── */
+    .flatpickr-calendar {
+      background: var(--surf2) !important;
+      border: 1px solid var(--border2) !important;
+      border-radius: 10px !important;
+      box-shadow: 0 8px 32px rgba(0,0,0,.5) !important;
+      font-family: inherit !important;
+      width: 100% !important;
+    }
+    .flatpickr-calendar.inline {
+      display: block !important;
+      top: 0 !important;
+      position: relative !important;
+      width: 100% !important;
+    }
+    .flatpickr-months { padding: 6px 0 2px; }
+    .flatpickr-months .flatpickr-prev-month,
+    .flatpickr-months .flatpickr-next-month { color: var(--muted) !important; fill: var(--muted) !important; }
+    .flatpickr-months .flatpickr-prev-month:hover,
+    .flatpickr-months .flatpickr-next-month:hover { color: var(--text) !important; fill: var(--text) !important; }
+    .flatpickr-current-month { font-size: 14px !important; color: var(--text) !important; }
+    .flatpickr-current-month .flatpickr-monthDropdown-months,
+    .flatpickr-current-month input.cur-year {
+      background: transparent !important;
+      color: var(--text) !important;
+      font-family: inherit !important;
+      font-weight: 600 !important;
+    }
+    .flatpickr-weekday { color: var(--muted2) !important; font-size: 11px !important; }
+    .flatpickr-day {
+      color: var(--text) !important;
+      border-radius: 6px !important;
+      position: relative;
+    }
+    .flatpickr-day:hover { background: var(--surf3) !important; border-color: var(--border) !important; }
+    .flatpickr-day.today { border-color: var(--accentd) !important; color: var(--accent) !important; font-weight: 600; }
+    .flatpickr-day.today:hover { background: var(--surf3) !important; }
+    .flatpickr-day.selected {
+      background: var(--accentd) !important;
+      border-color: var(--accentd) !important;
+      color: #fff !important;
+    }
+    .flatpickr-day.flatpickr-disabled,
+    .flatpickr-day.prevMonthDay,
+    .flatpickr-day.nextMonthDay { color: var(--muted2) !important; opacity: .4; }
+    /* Occupied day marker */
+    .flatpickr-day.occupied-day { color: var(--muted) !important; }
+    .flatpickr-day.occupied-day::after {
+      content: '';
+      position: absolute;
+      bottom: 3px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 4px; height: 4px;
+      border-radius: 50%;
+      background: #f0883e;
+    }
+    .flatpickr-day.occupied-day.selected::after { background: #fff; }
+    .fp-legend {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 8px;
+      padding: 0 2px;
+    }
+    .fp-legend span { display: flex; align-items: center; gap: 5px; }
+    .fp-legend-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+    }
+    .date-err-msg {
+      font-size: 11px;
+      color: var(--red);
+      margin-top: 5px;
+      display: none;
+    }
+
+    .err { border-color: var(--red) !important; }
+
+    .hidden { display: none !important; }
+
+    /* ── Role autocomplete ────────────────────────────────── */
+    .role-wrap { position: relative; }
+
+    .role-dropdown {
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0; right: 0;
+      background: var(--surf2);
+      border: 1px solid var(--border2);
+      border-radius: 6px;
+      z-index: 300;
+      max-height: 160px;
+      overflow-y: auto;
+      box-shadow: 0 8px 24px rgba(0,0,0,.5);
+      scrollbar-width: thin;
+      scrollbar-color: var(--border) transparent;
+    }
+
+    .role-opt {
+      padding: 7px 12px;
+      font-size: 13px;
+      cursor: pointer;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .role-opt:hover, .role-opt.active { background: var(--surf3); }
+    .role-opt .opt-count {
+      font-size: 10px;
+      color: var(--muted2);
+      margin-left: auto;
+      white-space: nowrap;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══ Header ══════════════════════════════════════════════════════════════ -->
+<header class="app-header">
+  <div class="logo">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+         stroke-linecap="round" stroke-linejoin="round">
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+      <circle cx="9" cy="7" r="4"/>
+      <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+      <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+    </svg>
+    People Ledger
+  </div>
+  <div class="header-sep"></div>
+  <span class="count-pill" id="countPill">0 people</span>
+  <div class="zoom-controls">
+    <button class="zoom-btn" id="btnZoomOut" title="Zoom out (width)">−</button>
+    <span class="zoom-label" id="zoomLabel">50px/d</span>
+    <button class="zoom-btn" id="btnZoomIn" title="Zoom in (width)">+</button>
+  </div>
+  <div class="zoom-controls" style="margin-left:4px">
+    <button class="zoom-btn" id="btnRowShrink" title="Shorter rows">↕−</button>
+    <span class="zoom-label" id="rowHeightLabel">60px</span>
+    <button class="zoom-btn" id="btnRowGrow" title="Taller rows">↕+</button>
+  </div>
+  <button class="btn-primary" id="btnAddPerson">+ Add Person</button>
+</header>
+
+<!-- ══ Main ════════════════════════════════════════════════════════════════ -->
+<main class="app-main">
+  <div class="ledger" id="ledger"></div>
+
+  <div class="empty-state hidden" id="emptyState">
+    <div class="empty-icon">📋</div>
+    <h2>No people yet</h2>
+    <p>Add people to start tracking where they are and where they've been.</p>
+    <button class="btn-primary" id="btnAddPersonEmpty">+ Add First Person</button>
+  </div>
+</main>
+
+<!-- ══ Modal: Add / Edit Person ════════════════════════════════════════════ -->
+<div class="modal-backdrop hidden" id="personModal">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="personModalTitle">
+    <div class="modal-header">
+      <h3 id="personModalTitle">Add Person</h3>
+      <button class="btn-icon" id="btnClosePersonModal" style="font-size:16px">✕</button>
+    </div>
+    <div class="modal-body">
+
+      <!-- Photo -->
+      <div class="form-row photo-row">
+        <div class="photo-preview-wrap" id="photoPreviewWrap">
+          <div class="photo-preview-init" id="photoPreviewInit" style="background:#1f6feb">?</div>
+        </div>
+        <div class="photo-inputs">
+          <input type="text" id="personPhotoUrl" placeholder="Photo URL (https://…)">
+          <div class="or-divider">— or —</div>
+          <div class="file-btn-wrap">
+            <label class="file-label" for="personPhotoFile">📁 Upload from device</label>
+            <input class="file-input" type="file" id="personPhotoFile" accept="image/*">
+          </div>
+        </div>
+      </div>
+
+      <!-- Name -->
+      <div class="form-row">
+        <label>Name <span style="color:var(--red)">*</span></label>
+        <input type="text" id="personName" placeholder="Full name" autocomplete="off">
+      </div>
+
+      <!-- Role -->
+      <div class="form-row">
+        <label>Role</label>
+        <div class="role-wrap">
+          <input type="text" id="personRole" placeholder="e.g. Engineer, Manager…" autocomplete="off">
+          <div class="role-dropdown hidden" id="roleDropdown"></div>
+        </div>
+      </div>
+
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" id="btnCancelPerson">Cancel</button>
+      <button class="btn-primary" id="btnSavePerson">Save Person</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ Modal: Add Event ══════════════════════════════════════════════════ -->
+<!-- ══ Worksite / Travel Edit Modal ══════════════════════════════════════ -->
+<div class="modal-backdrop hidden" id="wsEditModal">
+  <div class="modal modal-wide" role="dialog" aria-modal="true">
+    <div class="modal-header">
+      <h3 id="sharedEditModalTitle">Edit Worksite</h3>
+      <button class="btn-icon" id="btnCloseWsModal" style="font-size:16px">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <label>Name <span style="color:var(--red)">*</span></label>
+        <input type="text" id="wsEditName" placeholder="e.g. Rio Project" autocomplete="off">
+      </div>
+      <div class="form-row">
+        <label>City / Location <span style="color:var(--red)">*</span></label>
+        <div class="role-wrap">
+          <input type="text" id="wsEditCity" placeholder="Type a Brazilian city…" autocomplete="off">
+          <div class="role-dropdown hidden" id="wsEditCityDropdown"></div>
+        </div>
+      </div>
+      <div class="form-row">
+        <label>Date Range <span style="color:var(--red)">*</span></label>
+        <div id="wsEditDatePicker"></div>
+        <div class="date-err-msg hidden" id="wsEditDateErr">Please select at least a start date.</div>
+      </div>
+
+      <!-- Staffing slots (worksite only) -->
+      <div class="form-row" id="wsSlotsSect">
+        <label>Required Staffing <span style="font-size:10px;color:var(--muted2);font-weight:400">— role, headcount, period</span></label>
+        <div style="display:grid;grid-template-columns:1fr 44px 110px 110px 24px;gap:4px;margin-bottom:4px">
+          <small style="color:var(--muted2);font-size:9px;padding-left:2px">Role</small>
+          <small style="color:var(--muted2);font-size:9px;text-align:center">×</small>
+          <small style="color:var(--muted2);font-size:9px;text-align:center">From</small>
+          <small style="color:var(--muted2);font-size:9px;text-align:center">To</small>
+          <span></span>
+        </div>
+        <div id="wsSlotsList" style="display:flex;flex-direction:column;gap:5px"></div>
+        <button type="button" id="btnAddWsSlot" class="btn-ghost"
+                style="margin-top:6px;font-size:11px;padding:3px 10px;width:100%">+ Add Staffing Slot</button>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" id="btnCancelWsEdit">Cancel</button>
+      <button class="btn-primary" id="btnSaveWsEdit">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop hidden" id="eventModal">
+  <div class="modal modal-wide" role="dialog" aria-modal="true">
+    <div class="modal-header">
+      <h3>Add Event</h3>
+      <button class="btn-icon" id="btnCloseEventModal" style="font-size:16px">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:12px;color:var(--muted);margin-bottom:14px">
+        Adding event for <strong id="evPersonLabel" style="color:var(--text)"></strong>
+      </p>
+
+      <!-- Event type -->
+      <div class="form-row">
+        <label>Event Type <span style="color:var(--red)">*</span></label>
+        <div class="ev-type-sel" id="evTypeSel">
+          <button class="ev-type-btn active" data-type="worksite">🏗️ Worksite</button>
+          <button class="ev-type-btn" data-type="home">🏠 Home</button>
+          <button class="ev-type-btn" data-type="travel">✈️ Travel</button>
+        </div>
+      </div>
+
+      <!-- Shared name (worksite / travel only) -->
+      <div class="form-row" id="evNameRow">
+        <label>Name <span style="color:var(--red)">*</span> <span style="font-size:10px;color:var(--muted2);font-weight:400">(shared — type to find or create)</span></label>
+        <div class="role-wrap">
+          <input type="text" id="evSharedName" placeholder="e.g. Rio Project, Flight to SP…" autocomplete="off">
+          <div class="role-dropdown hidden" id="evSharedDropdown"></div>
+        </div>
+        <div class="ev-shared-peers hidden" id="evSharedPeers"></div>
+      </div>
+
+      <!-- City -->
+      <div class="form-row">
+        <label>City / Location <span style="color:var(--red)">*</span></label>
+        <div class="role-wrap">
+          <input type="text" id="eventCity" placeholder="Type a Brazilian city…" autocomplete="off">
+          <div class="role-dropdown hidden" id="eventCityDropdown"></div>
+        </div>
+      </div>
+
+      <!-- Date range -->
+      <div class="form-row">
+        <label>Date Range <span style="color:var(--red)">*</span> <span style="font-size:10px;color:var(--muted2);font-weight:400">(click start then end — same day twice for single-day)</span></label>
+        <div id="eventDatePicker"></div>
+        <div class="fp-legend">
+          <span><div class="fp-legend-dot" style="background:#f0883e"></div> Occupied</span>
+          <span><div class="fp-legend-dot" style="background:var(--accentd)"></div> Today</span>
+        </div>
+        <div class="date-err-msg" id="evDateErrMsg">Please select at least a start date.</div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" id="btnCancelEvent">Cancel</button>
+      <button class="btn-primary" id="btnSaveEvent">Add Event</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══ State ════════════════════════════════════════════════════════════════════
+const STORAGE_KEY = 'people-ledger-v1';
+
+let state = { people: [], roles: [], worksites: [], travels: [] };
+let pxPerDay  = 50;
+let rowHeight = 60;
+
+function save() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+function load() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      state = JSON.parse(raw);
+      if (!state.roles)     state.roles     = [];
+      if (!state.worksites) state.worksites = [];
+      if (!state.travels)   state.travels   = [];
+      // Ensure slots on worksites
+      for (const ws of state.worksites) {
+        if (!ws.slots) ws.slots = [];
+      }
+      // Migrate old locations → events
+      for (const p of state.people) {
+        if (p.locations && !p.events) {
+          p.events = p.locations.map(l => ({
+            id: l.id, type: 'worksite', city: l.city,
+            startDate: l.date, endDate: l.date,
+            refId: null
+          }));
+        }
+        if (!p.events) p.events = [];
+        delete p.locations;
+        // Ensure every shared-type event has refId field
+        for (const ev of p.events) {
+          if ((ev.type === 'worksite' || ev.type === 'travel') && ev.refId === undefined) {
+            ev.refId = null;
+          }
+        }
+      }
+    }
+  } catch (_) { /* ignore corrupt data */ }
+}
+
+// ══ Roles ════════════════════════════════════════════════════════════════════
+/** Add a role to the registry if not already present (case-insensitive dedup). */
+function upsertRole(role) {
+  if (!role) return;
+  const norm = role.toLowerCase();
+  if (!state.roles.some(r => r.toLowerCase() === norm)) {
+    state.roles.push(role);
+    state.roles.sort((a, b) => a.localeCompare(b));
+  }
+}
+
+/** Remove roles that no person currently holds. */
+function gcRoles() {
+  const used = new Set(state.people.map(p => p.role).filter(Boolean));
+  state.roles = state.roles.filter(r => used.has(r));
+}
+
+// ══ Shared entity registries (worksites & travels) ════════════════════════════
+/**
+ * Upsert a shared entity into the registry identified by type ('worksite'|'travel').
+ * Matches by name (case-insensitive). If found, updates city/dates and returns the
+ * existing id. If not found, creates a new entry and returns its id.
+ */
+function upsertShared(type, { name, city, startDate, endDate }) {
+  const list = type === 'worksite' ? state.worksites : state.travels;
+  const nn   = name.toLowerCase();
+  let entry  = list.find(e => e.name.toLowerCase() === nn);
+  if (entry) {
+    entry.city = city; entry.startDate = startDate; entry.endDate = endDate;
+  } else {
+    entry = { id: uid(), name, city, startDate, endDate, slots: type === 'worksite' ? [] : undefined };
+    if (type !== 'worksite') delete entry.slots;
+    list.push(entry);
+    list.sort((a, b) => a.name.localeCompare(b.name));
+  }
+  return entry.id;
+}
+
+/** Remove entries from the registry that no person currently references. */
+function gcShared(type) {
+  const list = type === 'worksite' ? state.worksites : state.travels;
+  const used = new Set();
+  for (const p of state.people)
+    for (const ev of (p.events || []))
+      if (ev.type === type && ev.refId) used.add(ev.refId);
+  if (type === 'worksite') state.worksites = list.filter(e => used.has(e.id));
+  else                     state.travels   = list.filter(e => used.has(e.id));
+}
+
+// ══ Utilities ════════════════════════════════════════════════════════════════
+function uid() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+}
+
+function escHtml(str) {
+  if (str == null) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function fmtDate(iso) {
+  const [y, m, d] = iso.split('-').map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString('en-US', {
+    month: 'short', day: 'numeric', year: '2-digit'
+  });
+}
+
+const AVATAR_COLORS = [
+  '#1f6feb','#238636','#9a3412','#6d28d9','#b45309','#0e7490','#be185d','#065f46'
+];
+
+function avatarColor(name) {
+  if (!name) return AVATAR_COLORS[0];
+  let h = 0;
+  for (const c of name) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+  return AVATAR_COLORS[h % AVATAR_COLORS.length];
+}
+
+function initials(name) {
+  if (!name) return '?';
+  return name.trim().split(/\s+/).map(w => w[0]).join('').slice(0, 2).toUpperCase();
+}
+
+// ══ Date utilities ════════════════════════════════════════════════════════════
+function dayToISO(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function isoToDay(iso) {
+  const [y, m, d] = iso.split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
+
+function isoAddDays(iso, n) {
+  const d = isoToDay(iso);
+  d.setDate(d.getDate() + n);
+  return dayToISO(d);
+}
+
+function daysBetween(isoA, isoB) {
+  return Math.round((isoToDay(isoB) - isoToDay(isoA)) / 86400000);
+}
+
+function globalDateRange() {
+  let min = null, max = null;
+  for (const p of state.people) {
+    for (const ev of (p.events || [])) {
+      if (!min || ev.startDate < min) min = ev.startDate;
+      const ed = ev.endDate || ev.startDate;
+      if (!max || ed > max) max = ed;
+    }
+  }
+  if (!min) {
+    const now = new Date();
+    min = dayToISO(now);
+    max = dayToISO(now);
+  }
+  return { min: isoAddDays(min, -3), max: isoAddDays(max, 5) };
+}
+
+function getOccupiedDays(person) {
+  const occupied = new Set();
+  for (const ev of (person.events || [])) {
+    const s = isoToDay(ev.startDate);
+    const e = isoToDay(ev.endDate || ev.startDate);
+    const cur = new Date(s);
+    while (cur <= e) { occupied.add(dayToISO(cur)); cur.setDate(cur.getDate() + 1); }
+  }
+  return occupied;
+}
+
+// ══ Render ═══════════════════════════════════════════════════════════════════
+function render() {
+  const ledger    = document.getElementById('ledger');
+  const empty     = document.getElementById('emptyState');
+  const pill      = document.getElementById('countPill');
+  const n         = state.people.length;
+
+  document.documentElement.style.setProperty('--ppd', pxPerDay + 'px');
+  document.documentElement.style.setProperty('--rh',  rowHeight + 'px');
+  document.getElementById('zoomLabel').textContent      = pxPerDay + 'px/d';
+  document.getElementById('rowHeightLabel').textContent = rowHeight + 'px';
+  pill.textContent = `${n} ${n === 1 ? 'person' : 'people'}`;
+
+  if (n === 0) { ledger.innerHTML = ''; empty.classList.remove('hidden'); return; }
+  empty.classList.add('hidden');
+
+  const { min: minDate, max: maxDate } = globalDateRange();
+  const totalDays = daysBetween(minDate, maxDate) + 1;
+  const timelineW = totalDays * pxPerDay;
+  const todayIso  = dayToISO(new Date());
+
+  // ─ Build ruler
+  let monthsHtml = '', daysHtml = '';
+  let cur = isoToDay(minDate);
+  const endDay = isoToDay(maxDate);
+
+  while (cur <= endDay) {
+    const nextMonth = new Date(cur.getFullYear(), cur.getMonth() + 1, 1);
+    const clampEnd  = nextMonth <= endDay ? new Date(nextMonth - 86400000) : new Date(endDay);
+    const spanDays  = Math.round((clampEnd - cur) / 86400000) + 1;
+    const label     = cur.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' });
+    monthsHtml += `<div class="ruler-month" style="width:${spanDays * pxPerDay}px">${label}</div>`;
+    cur = nextMonth;
+  }
+
+  cur = isoToDay(minDate);
+  while (cur <= isoToDay(maxDate)) {
+    const iso      = dayToISO(cur);
+    const isToday  = iso === todayIso;
+    const dow      = cur.getDay();
+    const isWk     = (dow === 0 || dow === 6) && !isToday;
+    const cls      = isToday ? 'ruler-today' : (isWk ? 'ruler-weekend' : '');
+    daysHtml += `<div class="ruler-day ${cls}" style="width:${pxPerDay}px">${cur.getDate()}</div>`;
+    cur.setDate(cur.getDate() + 1);
+  }
+
+  const todayOff  = daysBetween(minDate, todayIso);
+  const todayLine = todayOff >= 0 && todayOff < totalDays
+    ? `<div class="today-line" style="left:${todayOff * pxPerDay + Math.floor(pxPerDay / 2)}px"></div>`
+    : '';
+
+  const EV_ICONS = { worksite: '🏗️', home: '🏠', travel: '✈️' };
+
+  // ─ Helper: build sidebar avatar html
+  function sidebarAvatar(person, size = 36) {
+    const color = avatarColor(person.name);
+    const inits = initials(person.name);
+    const fs    = size <= 28 ? 10 : 13;
+    return person.photo
+      ? `<img class="avatar" src="${escHtml(person.photo)}" alt="${escHtml(person.name)}"
+              onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+         <div class="avatar-init" style="background:${color};width:${size}px;height:${size}px;font-size:${fs}px;display:none">${inits}</div>`
+      : `<div class="avatar-init" style="background:${color};width:${size}px;height:${size}px;font-size:${fs}px">${inits}</div>`;
+  }
+
+  // ══ helpers ════════════════════════════════════════════════════════════════
+  /** How many people fill a slot (by role + date overlap). */
+  function slotFill(wsId, slot) {
+    return state.people.filter(p => {
+      if (p.role !== slot.role) return false;
+      const ev = (p.events || []).find(e => e.type === 'worksite' && e.refId === wsId);
+      if (!ev) return false;
+      const evEnd = ev.endDate || ev.startDate;
+      return ev.startDate <= slot.endDate && evEnd >= slot.startDate;
+    }).length;
+  }
+
+  function sharedGroupRow(entry, type, assignedList) {
+    const isWs    = type === 'worksite';
+    const icon    = isWs ? '🏗️' : '✈️';
+    const eStart  = entry.startDate;
+    const eEnd    = entry.endDate || entry.startDate;
+    const editAttr = isWs ? `data-edit-ws="${entry.id}"` : `data-edit-tr="${entry.id}"`;
+    const sidebarCls = isWs ? 'gantt-ws-sidebar' : 'gantt-ws-sidebar gantt-tr-sidebar';
+    const trackCls   = isWs ? 'gantt-ws-track' : 'gantt-ws-track gantt-tr-track';
+    const nameCls    = isWs ? 'gantt-ws-name' : 'gantt-tr-name';
+    const barCls     = isWs ? 'ws-bar' : 'ws-bar ws-bar-travel';
+
+    // Slot summary (worksite only)
+    let slotSummaryHtml = '';
+    let demandRowHtml   = '';
+    if (isWs && (entry.slots || []).length) {
+      const slotItems = entry.slots.filter(s => s.role).map(s => {
+        const filled = slotFill(entry.id, s);
+        const dots   = Array.from({ length: s.count }, (_, i) =>
+          `<span class="ws-fill-dot ${i < filled ? 'f' : 'e'}"></span>`
+        ).join('');
+        return `<div class="ws-slot-req"><span>${escHtml(s.role)}&times;${s.count}</span>${dots}</div>`;
+      });
+      slotSummaryHtml = `<div class="ws-slot-reqs">${slotItems.join('')}</div>`;
+
+      const demandBars = entry.slots.filter(s => s.role && s.startDate).map(s => {
+        const filled = slotFill(entry.id, s);
+        const fillCls = filled >= s.count ? 'filled' : filled > 0 ? 'partial' : 'unfilled';
+        const left  = daysBetween(minDate, s.startDate) * pxPerDay;
+        const width = Math.max((daysBetween(s.startDate, s.endDate || s.startDate) + 1) * pxPerDay - 4, 22);
+        return `<div class="ws-slot-bar ${fillCls}" style="left:${left}px;width:${width}px"
+                     title="${escHtml(s.role)} ×${s.count} (${filled} filled)">
+                  ${escHtml(s.role)} ×${s.count} <small style="opacity:.7">${filled}/${s.count}</small>
+                </div>`;
+      }).join('');
+      demandRowHtml = `<div class="gantt-ws-demandrow">${demandBars}</div>`;
+    }
+
+    const subRowsHtml = assignedList.map(({ person, ev }) => {
+      const evStart = ev.startDate || eStart;
+      const evEnd   = ev.endDate   || eEnd;
+      const left    = daysBetween(minDate, evStart) * pxPerDay;
+      const width   = Math.max((daysBetween(evStart, evEnd) + 1) * pxPerDay - 4, 22);
+      const color   = avatarColor(person.name);
+      const inits   = initials(person.name);
+      const tip     = `${person.name}${person.role ? ' · ' + person.role : ''} — ${ev.city} · ${fmtDate(evStart)}${evEnd !== evStart ? ' → ' + fmtDate(evEnd) : ''}`;
+      const avInner = person.photo
+        ? `<img src="${escHtml(person.photo)}" alt="${escHtml(inits)}"
+                onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+           <span style="display:none;width:100%;height:100%;border-radius:50%;background:${color};align-items:center;justify-content:center;font-size:inherit">${escHtml(inits)}</span>`
+        : `<span style="display:flex;width:100%;height:100%;border-radius:50%;background:${color};align-items:center;justify-content:center;font-size:inherit">${escHtml(inits)}</span>`;
+      return `
+        <div class="gantt-ws-subrow" title="${escHtml(tip)}">
+          <div class="${barCls}" style="left:${left}px;width:${width}px">
+            <div class="ws-bar-av">${avInner}</div>
+            <span class="ws-bar-name">${escHtml(person.name)}</span>
+            ${person.role ? `<span class="ws-bar-role">${escHtml(person.role)}</span>` : ''}
+          </div>
+        </div>`;
+    }).join('');
+
+    return `
+      <div class="gantt-row">
+        <div class="gantt-sidebar ${sidebarCls}">
+          <div class="gantt-ws-badge">${icon}</div>
+          <div class="${nameCls}">${escHtml(entry.name)}</div>
+          <div class="gantt-ws-city">${escHtml(entry.city)}</div>
+          <div class="gantt-ws-dates">${fmtDate(eStart)}${eEnd !== eStart ? ' → ' + fmtDate(eEnd) : ''}</div>
+          ${slotSummaryHtml}
+          <button class="btn-edit-ws" ${editAttr}>✏ Edit</button>
+        </div>
+        <div class="${trackCls}" style="width:${timelineW}px">
+          ${todayLine}
+          ${demandRowHtml}
+          ${subRowsHtml}
+        </div>
+      </div>`;
+  }
+
+  // ══ Section 1: Worksite group rows ══════════════════════════════════════════
+  let worksiteRowsHtml = '';
+  for (const ws of state.worksites) {
+    const assigned = state.people
+      .map(p => ({ person: p, ev: (p.events || []).find(e => e.type === 'worksite' && e.refId === ws.id) }))
+      .filter(x => x.ev);
+    if (!assigned.length) continue;
+    worksiteRowsHtml += sharedGroupRow(ws, 'worksite', assigned);
+  }
+
+  // ══ Section 2: Travel group rows (2+ people only) ════════════════════════════
+  // Pre-compute which travel refIds have 2+ people (so we can filter them from person rows)
+  const groupedTravelIds = new Set(
+    state.travels.filter(tr =>
+      state.people.filter(p => (p.events || []).some(e => e.type === 'travel' && e.refId === tr.id)).length >= 2
+    ).map(tr => tr.id)
+  );
+
+  let travelRowsHtml = '';
+  for (const tr of state.travels) {
+    if (!groupedTravelIds.has(tr.id)) continue;
+    const assigned = state.people
+      .map(p => ({ person: p, ev: (p.events || []).find(e => e.type === 'travel' && e.refId === tr.id) }))
+      .filter(x => x.ev);
+    travelRowsHtml += sharedGroupRow(tr, 'travel', assigned);
+  }
+
+  // ══ Section 3: People rows (home + solo travel only) ════════════════════════
+  const peopleRowsHtml = state.people.map(person => {
+    const events = [...(person.events || [])]
+      .filter(ev => ev.type !== 'worksite' && !(ev.type === 'travel' && ev.refId && groupedTravelIds.has(ev.refId)))
+      .sort((a, b) => a.startDate < b.startDate ? -1 : 1);
+
+    const roleHtml = person.role
+      ? `<span class="person-role" title="${escHtml(person.role)}">${escHtml(person.role)}</span>`
+      : '';
+
+    const barsHtml = events.map(ev => {
+      const startOff = daysBetween(minDate, ev.startDate);
+      const endDate  = ev.endDate || ev.startDate;
+      const endOff   = daysBetween(minDate, endDate);
+      const left     = startOff * pxPerDay;
+      const width    = Math.max((endOff - startOff + 1) * pxPerDay - 4, 22);
+      const icon     = EV_ICONS[ev.type] || '📍';
+      const sharedEntry = (ev.type === 'travel' && ev.refId)
+        ? (state.travels || []).find(t => t.id === ev.refId) : null;
+      const label      = sharedEntry ? sharedEntry.name : ev.city;
+      const tooltip    = sharedEntry ? `${sharedEntry.name} — ${ev.city}` : ev.city;
+      const rangeLabel = endDate !== ev.startDate
+        ? ` · ${fmtDate(ev.startDate)} → ${fmtDate(endDate)}`
+        : ` · ${fmtDate(ev.startDate)}`;
+      return `<div class="ev-bar ev-${escHtml(ev.type)}" style="left:${left}px;width:${width}px"
+                   title="${escHtml(tooltip)}${rangeLabel}">
+                <span class="ev-icon">${icon}</span>
+                <span class="ev-lbl">${escHtml(label)}</span>
+                <button class="ev-del" data-pid="${person.id}" data-eid="${ev.id}" title="Remove">&#xD7;</button>
+              </div>`;
+    }).join('');
+
+    return `
+      <div class="gantt-row" data-id="${person.id}">
+        <div class="gantt-sidebar">
+          ${sidebarAvatar(person)}
+          <div class="gantt-name">${escHtml(person.name)}</div>
+          ${roleHtml}
+          <div class="meta-actions" style="margin-top:auto">
+            <button class="btn-icon" data-del-person="${person.id}" title="Remove person" style="font-size:11px">✕</button>
+          </div>
+        </div>
+        <div class="gantt-track" style="width:${timelineW}px">
+          ${todayLine}
+          ${barsHtml}
+          <button class="btn-add-ev" data-add-event="${person.id}">＋ Event</button>
+        </div>
+      </div>`;
+  }).join('');
+
+  // ══ Compose ══════════════════════════════════════════════════════════════════
+  const wsSectionHtml = worksiteRowsHtml
+    ? `<div class="gantt-section-hdr-row"><div class="gantt-section-hdr">🏗️ Worksites</div></div>${worksiteRowsHtml}`
+    : '';
+  const trSectionHtml = travelRowsHtml
+    ? `<div class="gantt-section-hdr-row"><div class="gantt-section-hdr">✈️ Shared Travels</div></div>${travelRowsHtml}`
+    : '';
+  const peopleSectionHtml =
+    `<div class="gantt-section-hdr-row"><div class="gantt-section-hdr">👤 People</div></div>${peopleRowsHtml}`;
+
+  ledger.innerHTML = `
+    <div class="gantt-inner">
+      <div class="gantt-row ruler-row">
+        <div class="gantt-stub"></div>
+        <div class="gantt-ruler" style="width:${timelineW}px">
+          <div class="ruler-months">${monthsHtml}</div>
+          <div class="ruler-days">${daysHtml}</div>
+        </div>
+      </div>
+      ${wsSectionHtml}
+      ${trSectionHtml}
+      ${peopleSectionHtml}
+    </div>`;
+}
+
+// ══ Ledger event delegation ═══════════════════════════════════════════════════
+document.getElementById('ledger').addEventListener('click', e => {
+  // Remove event
+  const delEv = e.target.closest('[data-eid]');
+  if (delEv) {
+    const { pid, eid } = delEv.dataset;
+    const person = state.people.find(p => p.id === pid);
+    if (person) {
+      person.events = person.events.filter(ev => ev.id !== eid);
+      gcShared('worksite');
+      gcShared('travel');
+      save(); render();
+    }
+    return;
+  }
+
+  // Remove person
+  const delPerson = e.target.closest('[data-del-person]');
+  if (delPerson) {
+    const id     = delPerson.dataset.delPerson;
+    const person = state.people.find(p => p.id === id);
+    if (person && confirm(`Remove "${person.name}" from the ledger?`)) {
+      state.people = state.people.filter(p => p.id !== id);
+      gcRoles();
+      gcShared('worksite');
+      gcShared('travel');
+      save(); render();
+    }
+    return;
+  }
+
+  // Add event
+  const addEv = e.target.closest('[data-add-event]');
+  if (addEv) openEventModal(addEv.dataset.addEvent);
+
+  // Edit worksite
+  const editWs = e.target.closest('[data-edit-ws]');
+  if (editWs) openSharedEditModal(editWs.dataset.editWs, 'worksite');
+
+  // Edit travel group
+  const editTr = e.target.closest('[data-edit-tr]');
+  if (editTr) openSharedEditModal(editTr.dataset.editTr, 'travel');
+});
+
+// ══ Person Modal ══════════════════════════════════════════════════════════════
+let editingPersonId = null;
+
+function openPersonModal(personId) {
+  editingPersonId = personId || null;
+  const isEdit = !!editingPersonId;
+
+  document.getElementById('personModalTitle').textContent = isEdit ? 'Edit Person' : 'Add Person';
+
+  if (isEdit) {
+    const p = state.people.find(p => p.id === editingPersonId);
+    document.getElementById('personName').value     = p.name  || '';
+    document.getElementById('personRole').value     = p.role  || '';
+    document.getElementById('personPhotoUrl').value = p.photo || '';
+    refreshPhotoPreview(p.photo, p.name);
+  } else {
+    document.getElementById('personName').value     = '';
+    document.getElementById('personRole').value     = '';
+    document.getElementById('personPhotoUrl').value = '';
+    document.getElementById('personPhotoFile').value = '';
+    refreshPhotoPreview('', '');
+  }
+
+  document.getElementById('personName').classList.remove('err');
+  document.getElementById('personModal').classList.remove('hidden');
+  setTimeout(() => document.getElementById('personName').focus(), 60);
+}
+
+function closePersonModal() {
+  document.getElementById('personModal').classList.add('hidden');
+  document.getElementById('personPhotoFile').value = '';
+  document.getElementById('roleDropdown').classList.add('hidden');
+}
+
+function savePersonModal() {
+  const name  = document.getElementById('personName').value.trim();
+  if (!name) {
+    document.getElementById('personName').classList.add('err');
+    document.getElementById('personName').focus();
+    return;
+  }
+  document.getElementById('personName').classList.remove('err');
+
+  const role  = document.getElementById('personRole').value.trim();
+  const photo = document.getElementById('personPhotoUrl').value.trim();
+
+  if (editingPersonId) {
+    const p = state.people.find(p => p.id === editingPersonId);
+    if (p) { p.name = name; p.role = role; p.photo = photo; }
+  } else {
+    state.people.push({ id: uid(), name, role, photo, events: [] });
+  }
+
+  upsertRole(role);
+  gcRoles();
+  save(); render(); closePersonModal();
+}
+
+// Photo preview helpers
+function refreshPhotoPreview(url, name) {
+  const wrap = document.getElementById('photoPreviewWrap');
+  const init = document.getElementById('photoPreviewInit');
+
+  // Remove any existing img
+  const oldImg = wrap.querySelector('img.photo-preview');
+  if (oldImg) oldImg.remove();
+
+  if (url) {
+    const img       = document.createElement('img');
+    img.className   = 'photo-preview';
+    img.src         = url;
+    img.onerror     = () => { img.remove(); showInitPreview(name); };
+    img.onload      = () => { init.style.display = 'none'; };
+    wrap.insertBefore(img, init);
+    init.style.display = 'none';
+  } else {
+    showInitPreview(name);
+  }
+}
+
+function showInitPreview(name) {
+  const init         = document.getElementById('photoPreviewInit');
+  init.textContent   = initials(name) || '?';
+  init.style.background = name ? avatarColor(name) : '#1f6feb';
+  init.style.display = 'flex';
+}
+
+document.getElementById('personPhotoUrl').addEventListener('input', function () {
+  refreshPhotoPreview(this.value.trim(), document.getElementById('personName').value.trim());
+});
+document.getElementById('personName').addEventListener('input', function () {
+  if (!document.getElementById('personPhotoUrl').value.trim()) {
+    refreshPhotoPreview('', this.value.trim());
+  }
+  this.classList.remove('err');
+});
+document.getElementById('personPhotoFile').addEventListener('change', function () {
+  const file = this.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    document.getElementById('personPhotoUrl').value = ev.target.result;
+    refreshPhotoPreview(ev.target.result, document.getElementById('personName').value.trim());
+  };
+  reader.readAsDataURL(file);
+});
+
+// ── Role autocomplete ────────────────────────────────────────────────────────
+const roleInput    = document.getElementById('personRole');
+const roleDropdown = document.getElementById('roleDropdown');
+let roleActiveIdx  = -1;
+
+function countRole(role) {
+  return state.people.filter(p => p.role === role).length;
+}
+
+function renderRoleDropdown(query) {
+  const q       = query.toLowerCase();
+  const matches = state.roles.filter(r => r.toLowerCase().includes(q));
+  if (!matches.length || !query) {
+    roleDropdown.classList.add('hidden');
+    return;
+  }
+  roleActiveIdx = -1;
+  roleDropdown.innerHTML = matches.map(r => {
+    const n = countRole(r);
+    return `<div class="role-opt" data-role="${escHtml(r)}">${escHtml(r)}<span class="opt-count">${n} ${n === 1 ? 'person' : 'people'}</span></div>`;
+  }).join('');
+  roleDropdown.classList.remove('hidden');
+}
+
+roleInput.addEventListener('input', function () {
+  renderRoleDropdown(this.value.trim());
+});
+
+roleInput.addEventListener('keydown', function (e) {
+  const opts = [...roleDropdown.querySelectorAll('.role-opt')];
+  if (!opts.length) return;
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    roleActiveIdx = Math.min(roleActiveIdx + 1, opts.length - 1);
+    opts.forEach((o, i) => o.classList.toggle('active', i === roleActiveIdx));
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    roleActiveIdx = Math.max(roleActiveIdx - 1, -1);
+    opts.forEach((o, i) => o.classList.toggle('active', i === roleActiveIdx));
+  } else if (e.key === 'Enter' || e.key === 'Tab') {
+    if (roleActiveIdx >= 0 && opts[roleActiveIdx]) {
+      e.preventDefault();
+      roleInput.value = opts[roleActiveIdx].dataset.role;
+      roleDropdown.classList.add('hidden');
+    }
+  } else if (e.key === 'Escape') {
+    if (!roleDropdown.classList.contains('hidden')) {
+      e.stopPropagation(); // don't also close the modal
+      roleDropdown.classList.add('hidden');
+    }
+  }
+});
+
+roleDropdown.addEventListener('mousedown', function (e) {
+  const opt = e.target.closest('.role-opt');
+  if (opt) {
+    e.preventDefault(); // keep input focus
+    roleInput.value = opt.dataset.role;
+    roleDropdown.classList.add('hidden');
+  }
+});
+
+roleInput.addEventListener('blur', () => {
+  setTimeout(() => roleDropdown.classList.add('hidden'), 150);
+});
+
+roleInput.addEventListener('focus', function () {
+  if (this.value.trim()) renderRoleDropdown(this.value.trim());
+});
+
+document.getElementById('btnAddPerson').addEventListener('click',      () => openPersonModal());
+document.getElementById('btnAddPersonEmpty').addEventListener('click', () => openPersonModal());
+document.getElementById('btnClosePersonModal').addEventListener('click', closePersonModal);
+document.getElementById('btnCancelPerson').addEventListener('click',   closePersonModal);
+document.getElementById('btnSavePerson').addEventListener('mousedown', () => {
+  roleDropdown.classList.add('hidden');
+});
+document.getElementById('btnSavePerson').addEventListener('click',     savePersonModal);
+document.getElementById('btnCancelPerson').addEventListener('mousedown', () => {
+  roleDropdown.classList.add('hidden');
+});
+
+// ══ Event Modal ════════════════════════════════════════════════════════════
+let evPersonId = null;
+let fpEvDate   = null;
+let evType     = 'worksite';
+
+function evSharedList() {
+  return evType === 'worksite' ? state.worksites : state.travels;
+}
+
+/** Show/hide the name row and re-initialise the date picker occupied-day mask. */
+function applyEvTypeUI(person) {
+  const isShared = (evType !== 'home');
+  document.getElementById('evNameRow').classList.toggle('hidden', !isShared);
+  if (isShared) {
+    setTimeout(() => document.getElementById('evSharedName').focus(), 60);
+  } else {
+    setTimeout(() => document.getElementById('eventCity').focus(), 60);
+  }
+  // Refresh peers hint when type changes (name may have been carried over)
+  refreshPeersHint(document.getElementById('evSharedName').value.trim());
+}
+
+/** Show which other people are already on the same named entity. */
+function refreshPeersHint(name) {
+  const peersEl = document.getElementById('evSharedPeers');
+  if (!name || evType === 'home') { peersEl.classList.add('hidden'); return; }
+  const nn    = name.toLowerCase();
+  const entry = evSharedList().find(e => e.name.toLowerCase() === nn);
+  if (!entry) { peersEl.classList.add('hidden'); return; }
+  const peers = state.people.filter(p =>
+    p.id !== evPersonId &&
+    (p.events || []).some(ev => ev.type === evType && ev.refId === entry.id)
+  );
+  if (!peers.length) { peersEl.classList.add('hidden'); return; }
+  const chips = peers.map(p =>
+    `<span class="ev-peer-chip">${escHtml(initials(p.name))} ${escHtml(p.name)}</span>`
+  ).join('');
+  peersEl.innerHTML = `Also on this ${evType}: ${chips}`;
+  peersEl.classList.remove('hidden');
+}
+
+function openEventModal(personId) {
+  evPersonId = personId;
+  evType     = 'worksite';
+  const person = state.people.find(p => p.id === personId);
+  document.getElementById('evPersonLabel').textContent = person ? person.name : '';
+  document.getElementById('evSharedName').value = '';
+  document.getElementById('evSharedName').classList.remove('err');
+  document.getElementById('evSharedDropdown').classList.add('hidden');
+  document.getElementById('evSharedPeers').classList.add('hidden');
+  document.getElementById('eventCity').value = '';
+  document.getElementById('eventCity').classList.remove('err');
+  document.getElementById('evDateErrMsg').style.display = 'none';
+
+  // Reset type selector
+  document.querySelectorAll('.ev-type-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.type === 'worksite');
+  });
+
+  applyEvTypeUI(person);
+
+  const occupied = getOccupiedDays(person || { events: [] });
+
+  if (fpEvDate) fpEvDate.destroy();
+  fpEvDate = flatpickr('#eventDatePicker', {
+    inline:      true,
+    mode:        'range',
+    dateFormat:  'Y-m-d',
+    defaultDate: new Date(),
+    onDayCreate(_dObj, _dStr, _fp, dayElem) {
+      const iso = dayElem.dateObj ? dayToISO(dayElem.dateObj) : null;
+      if (iso && occupied.has(iso)) dayElem.classList.add('occupied-day');
+    }
+  });
+
+  document.getElementById('eventModal').classList.remove('hidden');
+}
+
+function closeEventModal() {
+  document.getElementById('eventModal').classList.add('hidden');
+  document.getElementById('eventCityDropdown').classList.add('hidden');
+  document.getElementById('evSharedDropdown').classList.add('hidden');
+}
+
+function saveEventModal() {
+  const isShared = (evType !== 'home');
+  const name  = isShared ? document.getElementById('evSharedName').value.trim() : '';
+  const city  = document.getElementById('eventCity').value.trim();
+  let hasErr  = false;
+
+  if (isShared && !name) {
+    document.getElementById('evSharedName').classList.add('err');
+    document.getElementById('evSharedName').focus();
+    hasErr = true;
+  } else {
+    document.getElementById('evSharedName').classList.remove('err');
+  }
+
+  if (!city) {
+    document.getElementById('eventCity').classList.add('err');
+    if (!hasErr) document.getElementById('eventCity').focus();
+    hasErr = true;
+  } else {
+    document.getElementById('eventCity').classList.remove('err');
+  }
+
+  const selDates = fpEvDate?.selectedDates || [];
+  if (!selDates.length) {
+    document.getElementById('evDateErrMsg').style.display = 'block';
+    hasErr = true;
+  } else {
+    document.getElementById('evDateErrMsg').style.display = 'none';
+  }
+  if (hasErr) return;
+
+  const startDate = dayToISO(selDates[0]);
+  const endDate   = selDates[1] ? dayToISO(selDates[1]) : startDate;
+
+  const person = state.people.find(p => p.id === evPersonId);
+  if (!person) return;
+  person.events = person.events || [];
+
+  if (isShared) {
+    const refId = upsertShared(evType, { name, city, startDate, endDate });
+    person.events.push({ id: uid(), type: evType, refId, city, startDate, endDate });
+  } else {
+    person.events.push({ id: uid(), type: 'home', city, startDate, endDate });
+  }
+
+  save(); render(); closeEventModal();
+}
+
+// Type selector buttons
+document.getElementById('evTypeSel').addEventListener('click', e => {
+  const btn = e.target.closest('.ev-type-btn');
+  if (!btn) return;
+  evType = btn.dataset.type;
+  document.querySelectorAll('.ev-type-btn').forEach(b => b.classList.toggle('active', b === btn));
+  const person = state.people.find(p => p.id === evPersonId);
+  applyEvTypeUI(person);
+  // Re-render shared dropdown for new type if there's already text
+  renderSharedDropdown(document.getElementById('evSharedName').value.trim());
+});
+
+document.getElementById('btnCloseEventModal').addEventListener('click', closeEventModal);
+document.getElementById('btnCancelEvent').addEventListener('click',     closeEventModal);
+document.getElementById('btnSaveEvent').addEventListener('click',       saveEventModal);
+document.getElementById('btnSaveEvent').addEventListener('mousedown',   () => {
+  document.getElementById('eventCityDropdown').classList.add('hidden');
+  document.getElementById('evSharedDropdown').classList.add('hidden');
+});
+
+// ── Shared name autocomplete (worksites / travels registry) ──────────────────
+const sharedNameInput    = document.getElementById('evSharedName');
+const sharedNameDropdown = document.getElementById('evSharedDropdown');
+let sharedActiveIdx      = -1;
+
+function renderSharedDropdown(q) {
+  const list = evSharedList();
+  const qq   = q.toLowerCase();
+  const matches = qq
+    ? list.filter(e => e.name.toLowerCase().includes(qq))
+    : list;
+  if (!matches.length) { sharedNameDropdown.classList.add('hidden'); return; }
+  sharedActiveIdx = -1;
+  sharedNameDropdown.innerHTML = matches.map(e => {
+    // count how many people are already assigned
+    const n = state.people.filter(p =>
+      (p.events || []).some(ev => ev.type === evType && ev.refId === e.id)
+    ).length;
+    const badge = n ? `<span class="opt-count">${n} ${n === 1 ? 'person' : 'people'}</span>` : '';
+    return `<div class="role-opt" data-shared-id="${escHtml(e.id)}"
+                 data-name="${escHtml(e.name)}" data-city="${escHtml(e.city)}"
+                 data-start="${escHtml(e.startDate)}" data-end="${escHtml(e.endDate)}"
+             >${escHtml(e.name)}${badge}</div>`;
+  }).join('');
+  sharedNameDropdown.classList.remove('hidden');
+}
+
+function applySharedEntry(el) {
+  sharedNameInput.value = el.dataset.name;
+  document.getElementById('eventCity').value = el.dataset.city;
+  // Pre-fill the flatpickr date range
+  if (fpEvDate && el.dataset.start) {
+    const dates = el.dataset.end && el.dataset.end !== el.dataset.start
+      ? [el.dataset.start, el.dataset.end]
+      : [el.dataset.start];
+    fpEvDate.setDate(dates);
+  }
+  sharedNameDropdown.classList.add('hidden');
+  refreshPeersHint(el.dataset.name);
+}
+
+sharedNameInput.addEventListener('input', function () {
+  this.classList.remove('err');
+  renderSharedDropdown(this.value.trim());
+  refreshPeersHint(this.value.trim());
+});
+
+sharedNameInput.addEventListener('focus', function () {
+  renderSharedDropdown(this.value.trim());
+});
+
+sharedNameInput.addEventListener('blur', () => {
+  setTimeout(() => sharedNameDropdown.classList.add('hidden'), 150);
+});
+
+sharedNameInput.addEventListener('keydown', function (e) {
+  const opts = [...sharedNameDropdown.querySelectorAll('.role-opt')];
+  if (!opts.length) return;
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    sharedActiveIdx = Math.min(sharedActiveIdx + 1, opts.length - 1);
+    opts.forEach((o, i) => o.classList.toggle('active', i === sharedActiveIdx));
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    sharedActiveIdx = Math.max(sharedActiveIdx - 1, -1);
+    opts.forEach((o, i) => o.classList.toggle('active', i === sharedActiveIdx));
+  } else if (e.key === 'Enter' || e.key === 'Tab') {
+    if (sharedActiveIdx >= 0 && opts[sharedActiveIdx]) {
+      e.preventDefault();
+      applySharedEntry(opts[sharedActiveIdx]);
+    }
+  } else if (e.key === 'Escape') {
+    if (!sharedNameDropdown.classList.contains('hidden')) {
+      e.stopPropagation();
+      sharedNameDropdown.classList.add('hidden');
+    }
+  }
+});
+
+sharedNameDropdown.addEventListener('mousedown', function (e) {
+  const opt = e.target.closest('.role-opt');
+  if (opt) { e.preventDefault(); applySharedEntry(opt); }
+});
+
+// ── City autocomplete — shared IBGE factory ──────────────────────────────────
+let ibgeMunicipios = null;   // null = not loaded, [] = failed, [...] = ready
+let ibgeLoading    = false;
+
+/** Strip accents for comparison. */
+function norm(s) {
+  return s.toLowerCase().normalize('NFD').replace(/\p{M}/gu, '');
+}
+
+/** Load full IBGE list once per session (lazy). */
+async function ensureIBGE() {
+  if (ibgeMunicipios !== null) return;
+  if (ibgeLoading) return;
+  ibgeLoading = true;
+  try {
+    const res  = await fetch('https://servicodados.ibge.gov.br/api/v1/localidades/municipios');
+    const data = await res.json();
+    ibgeMunicipios = data.map(m => ({
+      label: m.nome,
+      uf:    m.microrregiao?.mesorregiao?.UF?.sigla ?? '',
+      norm:  norm(m.nome)
+    }));
+  } catch (_) {
+    ibgeMunicipios = [];
+  }
+  ibgeLoading = false;
+}
+
+/** Filter loaded list by query, return up to 10 best matches. */
+function searchIBGE(q) {
+  if (!ibgeMunicipios?.length) return [];
+  const nq = norm(q);
+  const sw = [], ct = [];
+  for (const m of ibgeMunicipios) {
+    if (m.norm.startsWith(nq))    sw.push(m);
+    else if (m.norm.includes(nq)) ct.push(m);
+    if (sw.length + ct.length >= 40) break;
+  }
+  return [...sw, ...ct].slice(0, 10);
+}
+
+/** Attach IBGE city autocomplete to any input+dropdown pair. */
+function attachCityAutocomplete(inputEl, dropdownEl) {
+  let activeIdx = -1;
+
+  function renderDropdown(opts) {
+    if (!opts.length) { dropdownEl.classList.add('hidden'); return; }
+    activeIdx = -1;
+    dropdownEl.innerHTML = opts.map(o => {
+      const sub = o.uf ? `<span class="opt-count">${escHtml(o.uf)}</span>` : '';
+      return `<div class="role-opt" data-city="${escHtml(o.label)}">${escHtml(o.label)}${sub}</div>`;
+    }).join('');
+    dropdownEl.classList.remove('hidden');
+  }
+
+  inputEl.addEventListener('input', async function () {
+    this.classList.remove('err');
+    const q = this.value.trim();
+    if (!q) { dropdownEl.classList.add('hidden'); return; }
+    if (ibgeMunicipios === null) ensureIBGE();
+    renderDropdown(searchIBGE(q));
+    if (ibgeLoading) {
+      const snap = q;
+      const wait = setInterval(() => {
+        if (!ibgeLoading) {
+          clearInterval(wait);
+          if (inputEl.value.trim() === snap) renderDropdown(searchIBGE(snap));
+        }
+      }, 100);
+    }
+  });
+
+  inputEl.addEventListener('keydown', function (e) {
+    const opts = [...dropdownEl.querySelectorAll('.role-opt')];
+    if (!opts.length) return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      activeIdx = Math.min(activeIdx + 1, opts.length - 1);
+      opts.forEach((o, i) => o.classList.toggle('active', i === activeIdx));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      activeIdx = Math.max(activeIdx - 1, -1);
+      opts.forEach((o, i) => o.classList.toggle('active', i === activeIdx));
+    } else if (e.key === 'Enter' || e.key === 'Tab') {
+      if (activeIdx >= 0 && opts[activeIdx]) {
+        e.preventDefault();
+        inputEl.value = opts[activeIdx].dataset.city;
+        dropdownEl.classList.add('hidden');
+      }
+    } else if (e.key === 'Escape') {
+      if (!dropdownEl.classList.contains('hidden')) {
+        e.stopPropagation();
+        dropdownEl.classList.add('hidden');
+      }
+    }
+  });
+
+  dropdownEl.addEventListener('mousedown', function (e) {
+    const opt = e.target.closest('.role-opt');
+    if (opt) {
+      e.preventDefault();
+      inputEl.value = opt.dataset.city;
+      dropdownEl.classList.add('hidden');
+    }
+  });
+
+  inputEl.addEventListener('blur', () => setTimeout(() => dropdownEl.classList.add('hidden'), 150));
+  inputEl.addEventListener('focus', function () {
+    if (this.value.trim()) this.dispatchEvent(new Event('input'));
+  });
+}
+
+// Attach to event modal city field
+attachCityAutocomplete(
+  document.getElementById('eventCity'),
+  document.getElementById('eventCityDropdown')
+);
+// Attach to worksite edit modal city field
+attachCityAutocomplete(
+  document.getElementById('wsEditCity'),
+  document.getElementById('wsEditCityDropdown')
+);
+
+// ══ Worksite / Travel Edit Modal ═════════════════════════════════════════════
+let editingWsId       = null;
+let editingSharedType = 'worksite';
+let fpWsDate          = null;
+
+function wsSlotRowHtml(slot, defStart, defEnd) {
+  const sid = slot.id || uid();
+  return `<div class="ws-slot-row" data-sid="${escHtml(sid)}">
+    <div class="role-wrap" style="position:relative">
+      <input type="text" class="ws-slot-role" placeholder="Role" value="${escHtml(slot.role || '')}" autocomplete="off">
+      <div class="role-dropdown hidden ws-slot-role-dd"></div>
+    </div>
+    <input type="number" class="ws-slot-count" min="1" max="99" value="${slot.count || 1}" title="Headcount">
+    <input type="date" class="ws-slot-start" value="${escHtml(slot.startDate || defStart || '')}">
+    <input type="date" class="ws-slot-end"   value="${escHtml(slot.endDate   || defEnd   || '')}">
+    <button type="button" class="btn-icon ws-slot-del" title="Remove">✕</button>
+  </div>`;
+}
+
+function attachSlotRoleAutocomplete(wrap) {
+  const input = wrap.querySelector('.ws-slot-role');
+  const dd    = wrap.querySelector('.ws-slot-role-dd');
+  if (dd.dataset.att) return;
+  dd.dataset.att = '1';
+  input.addEventListener('input', function () {
+    const q = this.value.toLowerCase();
+    const m = state.roles.filter(r => r.toLowerCase().includes(q));
+    if (!m.length || !this.value) { dd.classList.add('hidden'); return; }
+    dd.innerHTML = m.map(r => `<div class="role-opt" data-role="${escHtml(r)}">${escHtml(r)}</div>`).join('');
+    dd.classList.remove('hidden');
+  });
+  dd.addEventListener('mousedown', e => {
+    const opt = e.target.closest('.role-opt');
+    if (opt) { e.preventDefault(); input.value = opt.dataset.role; dd.classList.add('hidden'); }
+  });
+  input.addEventListener('blur', () => setTimeout(() => dd.classList.add('hidden'), 150));
+  input.addEventListener('focus', function () { if (this.value) this.dispatchEvent(new Event('input')); });
+}
+
+function renderWsSlots(slots, defStart, defEnd) {
+  const list = document.getElementById('wsSlotsList');
+  list.innerHTML = slots.map(s => wsSlotRowHtml(s, defStart, defEnd)).join('');
+  list.querySelectorAll('.role-wrap').forEach(attachSlotRoleAutocomplete);
+}
+
+// Slot add/remove delegation
+document.getElementById('wsSlotsList').addEventListener('click', e => {
+  const del = e.target.closest('.ws-slot-del');
+  if (del) del.closest('.ws-slot-row').remove();
+});
+document.getElementById('btnAddWsSlot').addEventListener('click', () => {
+  const ws = state.worksites.find(w => w.id === editingWsId);
+  const html = wsSlotRowHtml({ id: uid(), role: '', count: 1 }, ws?.startDate, ws?.endDate);
+  const list = document.getElementById('wsSlotsList');
+  list.insertAdjacentHTML('beforeend', html);
+  attachSlotRoleAutocomplete(list.lastElementChild.querySelector('.role-wrap'));
+  list.lastElementChild.querySelector('.ws-slot-role').focus();
+});
+
+function openSharedEditModal(id, type) {
+  const list  = type === 'worksite' ? state.worksites : state.travels;
+  const entry = list.find(e => e.id === id);
+  if (!entry) return;
+  editingWsId       = id;
+  editingSharedType = type;
+
+  document.getElementById('sharedEditModalTitle').textContent =
+    type === 'worksite' ? 'Edit Worksite' : 'Edit Travel';
+
+  document.getElementById('wsEditName').value = entry.name;
+  document.getElementById('wsEditCity').value = entry.city;
+  document.getElementById('wsEditName').classList.remove('err');
+  document.getElementById('wsEditCity').classList.remove('err');
+  document.getElementById('wsEditDateErr').classList.add('hidden');
+
+  // Show/hide slots section for worksites only
+  document.getElementById('wsSlotsSect').classList.toggle('hidden', type !== 'worksite');
+  if (type === 'worksite') renderWsSlots(entry.slots || [], entry.startDate, entry.endDate);
+
+  if (fpWsDate) fpWsDate.destroy();
+  fpWsDate = flatpickr('#wsEditDatePicker', {
+    inline:      true,
+    mode:        'range',
+    dateFormat:  'Y-m-d',
+    defaultDate: entry.endDate && entry.endDate !== entry.startDate
+      ? [entry.startDate, entry.endDate]
+      : [entry.startDate]
+  });
+
+  document.getElementById('wsEditModal').classList.remove('hidden');
+  setTimeout(() => document.getElementById('wsEditName').focus(), 60);
+}
+
+// Keep backward-compatible alias used in event delegation
+function openWsEditModal(wsId) { openSharedEditModal(wsId, 'worksite'); }
+
+function closeWsEditModal() {
+  document.getElementById('wsEditModal').classList.add('hidden');
+  document.getElementById('wsEditCityDropdown').classList.add('hidden');
+}
+
+function saveWsEditModal() {
+  const name = document.getElementById('wsEditName').value.trim();
+  const city = document.getElementById('wsEditCity').value.trim();
+  let hasErr = false;
+
+  if (!name) { document.getElementById('wsEditName').classList.add('err'); hasErr = true; }
+  else        document.getElementById('wsEditName').classList.remove('err');
+
+  if (!city) {
+    document.getElementById('wsEditCity').classList.add('err');
+    if (!hasErr) document.getElementById('wsEditCity').focus();
+    hasErr = true;
+  } else document.getElementById('wsEditCity').classList.remove('err');
+
+  const selDates = fpWsDate?.selectedDates || [];
+  if (!selDates.length) {
+    document.getElementById('wsEditDateErr').classList.remove('hidden');
+    hasErr = true;
+  } else document.getElementById('wsEditDateErr').classList.add('hidden');
+  if (hasErr) return;
+
+  const startDate = dayToISO(selDates[0]);
+  const endDate   = selDates[1] ? dayToISO(selDates[1]) : startDate;
+
+  const list  = editingSharedType === 'worksite' ? state.worksites : state.travels;
+  const entry = list.find(e => e.id === editingWsId);
+  if (!entry) return;
+  entry.name = name; entry.city = city; entry.startDate = startDate; entry.endDate = endDate;
+
+  // Collect and save slots (worksite only)
+  if (editingSharedType === 'worksite') {
+    entry.slots = [...document.querySelectorAll('#wsSlotsList .ws-slot-row')].map(row => ({
+      id:        row.dataset.sid || uid(),
+      role:      row.querySelector('.ws-slot-role').value.trim(),
+      count:     Math.max(1, parseInt(row.querySelector('.ws-slot-count').value) || 1),
+      startDate: row.querySelector('.ws-slot-start').value || startDate,
+      endDate:   row.querySelector('.ws-slot-end').value   || endDate,
+    })).filter(s => s.role);
+  }
+
+  // Propagate dates + city to all linked person events
+  for (const p of state.people) {
+    for (const ev of (p.events || [])) {
+      if (ev.type === editingSharedType && ev.refId === editingWsId) {
+        ev.city = city; ev.startDate = startDate; ev.endDate = endDate;
+      }
+    }
+  }
+
+  save(); render(); closeWsEditModal();
+}
+
+document.getElementById('btnCloseWsModal').addEventListener('click',  closeWsEditModal);
+document.getElementById('btnCancelWsEdit').addEventListener('click',   closeWsEditModal);
+document.getElementById('btnSaveWsEdit').addEventListener('click',     saveWsEditModal);
+document.getElementById('btnSaveWsEdit').addEventListener('mousedown', () => {
+  document.getElementById('wsEditCityDropdown').classList.add('hidden');
+});
+document.getElementById('wsEditModal').addEventListener('click', e => {
+  if (e.target === document.getElementById('wsEditModal')) closeWsEditModal();
+});
+
+// ══ Keyboard shortcuts ════════════════════════════════════════════════════════
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    closePersonModal();
+    closeEventModal();
+    closeWsEditModal();
+    return;
+  }
+  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+    if (!document.getElementById('personModal').classList.contains('hidden')) { savePersonModal(); return; }
+    if (!document.getElementById('eventModal').classList.contains('hidden'))  { saveEventModal();  return; }
+    if (!document.getElementById('wsEditModal').classList.contains('hidden')) { saveWsEditModal(); return; }  }
+});
+
+// Close on backdrop click
+document.getElementById('personModal').addEventListener('click', e => { if (e.target === document.getElementById('personModal')) closePersonModal(); });
+document.getElementById('eventModal').addEventListener('click',  e => { if (e.target === document.getElementById('eventModal'))  closeEventModal();  });
+
+// ══ Init ══════════════════════════════════════════════════════════════════════
+document.getElementById('btnZoomIn').addEventListener('click',    () => { pxPerDay  = Math.min(pxPerDay  + 10, 200); render(); });
+document.getElementById('btnZoomOut').addEventListener('click',   () => { pxPerDay  = Math.max(pxPerDay  - 10, 15);  render(); });
+document.getElementById('btnRowGrow').addEventListener('click',   () => { rowHeight = Math.min(rowHeight + 10, 160); render(); });
+document.getElementById('btnRowShrink').addEventListener('click', () => { rowHeight = Math.max(rowHeight - 10, 30);  render(); });
+load();
+render();
+</script>
+</body>
+</html>
