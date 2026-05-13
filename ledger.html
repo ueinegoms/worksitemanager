@@ -197,6 +197,7 @@
     .gantt-inner {
       display: flex;
       flex-direction: column;
+      position: relative;
     }
 
     .gantt-row {
@@ -352,8 +353,28 @@
       line-height: 1;
       font-family: inherit;
     }
-    .ev-bar:hover .ev-del { display: flex; }
-    .ev-del:hover { background: rgba(248,81,73,.85); }
+    .ev-bar:hover .ev-del,
+    .ev-bar:hover .ev-chain { display: flex; }
+    .ev-del:hover  { background: rgba(248,81,73,.85); }
+    .ev-chain {
+      position: absolute;
+      right: 24px; top: 50%;
+      transform: translateY(-50%);
+      background: rgba(0,0,0,.4);
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      width: 16px; height: 16px;
+      font-size: 13px;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      cursor: pointer;
+      line-height: 1;
+      font-family: inherit;
+    }
+    .ev-chain:hover { background: rgba(35,134,54,.85); }
 
     .ev-peer-badge {
       flex-shrink: 0;
@@ -427,6 +448,25 @@
       cursor: pointer;
     }
     .btn-edit-ws:hover { background: var(--surf3); color: var(--text); }
+    .ws-sidebar-actions {
+      display: flex;
+      gap: 4px;
+      margin-top: auto;
+      padding-top: 4px;
+    }
+    .ws-sidebar-actions button {
+      flex: 1;
+      background: transparent;
+      border: 1px solid var(--border2);
+      color: var(--muted);
+      font-size: 10px;
+      font-family: inherit;
+      border-radius: 4px;
+      padding: 3px 6px;
+      cursor: pointer;
+    }
+    .ws-sidebar-actions button:hover { background: var(--surf3); color: var(--text); }
+    .ws-sidebar-actions .btn-del-ws:hover { border-color: var(--red); color: var(--red); }
 
     /* Worksite track — flexbox column, height = n * --rh */
     .gantt-ws-track {
@@ -493,6 +533,96 @@
     }
     .ws-bar-name { overflow: hidden; text-overflow: ellipsis; min-width: 0; flex: 1; }
     .ws-bar-role { font-size: 10px; color: rgba(255,255,255,.6); flex-shrink: 0; }
+    .ws-bar-btns {
+      margin-left: auto;
+      flex-shrink: 0;
+      display: none;
+      align-items: center;
+      gap: 2px;
+    }
+    .ws-bar:hover .ws-bar-btns { display: flex; }
+    .ws-bar-btns button {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: rgba(255,255,255,.45);
+      font-size: 13px;
+      padding: 0 2px;
+      line-height: 1;
+    }
+    .ws-bar-btns .ws-bar-chain:hover { color: #3fb950; }
+    .ws-bar-btns .ws-bar-remove:hover { color: #f85149; }
+
+    /* Empty slot placeholder */
+    .ws-empty-slot {
+      position: absolute;
+      top: calc(var(--rh,60px) * .1);
+      height: calc(var(--rh,60px) * .8);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0 12px;
+      font-size: 11px;
+      color: rgba(255,255,255,.38);
+      border: 2px dashed rgba(255,255,255,.18);
+      background: rgba(255,255,255,.03);
+      cursor: pointer;
+      overflow: hidden;
+      white-space: nowrap;
+      transition: background .15s, border-color .15s, color .15s;
+    }
+    .ws-empty-slot:hover {
+      background: rgba(31,111,235,.15);
+      border-color: rgba(88,166,255,.6);
+      color: rgba(255,255,255,.75);
+    }
+    .ws-empty-cta { margin-left: auto; font-size: 10px; opacity: .7; }
+
+    /* Assign person modal */
+    .assign-section-hdr {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      color: var(--muted2);
+      padding: 4px 0 6px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 6px;
+    }
+    .assign-person-list {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      max-height: 340px;
+      overflow-y: auto;
+    }
+    .assign-person-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 10px;
+      border-radius: 8px;
+      background: var(--surf2);
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: border-color .15s, background .15s;
+    }
+    .assign-person-item:hover {
+      border-color: var(--accent);
+      background: rgba(31,111,235,.12);
+    }
+    .assign-person-item-name { font-size: 13px; font-weight: 600; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .assign-person-item-role { font-size: 10px; color: var(--muted2); }
+    .assign-match-badge {
+      font-size: 9px;
+      background: rgba(88,166,255,.2);
+      color: #58a6ff;
+      border-radius: 4px;
+      padding: 2px 5px;
+      flex-shrink: 0;
+      font-weight: 600;
+    }
 
     /* Travel group sidebar (amber) */
     .gantt-tr-sidebar {
@@ -554,13 +684,11 @@
     /* Slot rows in edit modal */
     .ws-slot-row {
       display: grid;
-      grid-template-columns: 1fr 44px 110px 110px 24px;
+      grid-template-columns: 1fr 55px 1fr 24px;
       gap: 4px;
       align-items: start;
     }
-    .ws-slot-row input[type="text"],
-    .ws-slot-row input[type="number"],
-    .ws-slot-row input[type="date"] {
+    .ws-slot-row input[type="text"] {
       background: var(--surf2);
       border: 1px solid var(--border2);
       border-radius: 4px;
@@ -572,7 +700,21 @@
       min-width: 0;
     }
     .ws-slot-row input:focus { outline: none; border-color: var(--accent); }
-    .ws-slot-row input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(.7); }
+    /* Slot date trigger input */
+    .ws-slot-date-trigger {
+      background: var(--surf2);
+      border: 1px solid var(--border2);
+      border-radius: 4px;
+      color: var(--text);
+      padding: 5px 6px;
+      font-size: 11px;
+      font-family: inherit;
+      width: 100%;
+      min-width: 0;
+      cursor: pointer;
+      box-sizing: border-box;
+    }
+    .ws-slot-date-trigger:focus { outline: none; border-color: var(--accent); }
 
     .btn-add-ev {
       position: absolute;
@@ -866,6 +1008,19 @@
       background: #f0883e;
     }
     .flatpickr-day.occupied-day.selected::after { background: #fff; }
+    /* Worksite-available day marker (green dot) */
+    .flatpickr-day.ws-avail-day::after {
+      content: '';
+      position: absolute;
+      bottom: 3px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 4px; height: 4px;
+      border-radius: 50%;
+      background: #3fb950;
+    }
+    .flatpickr-day.ws-avail-day.selected::after { background: rgba(255,255,255,.7); }
+    .flatpickr-day.ws-avail-day.inRange::after  { background: rgba(255,255,255,.5); }
     .fp-legend {
       display: flex;
       align-items: center;
@@ -954,6 +1109,7 @@
     <button class="zoom-btn" id="btnRowGrow" title="Taller rows">↕+</button>
   </div>
   <button class="btn-primary" id="btnAddPerson">+ Add Person</button>
+  <button class="btn-primary" id="btnAddWorksite" style="background:rgba(31,111,235,.18);border:1px solid var(--accentd)">🏗️ Add Worksite</button>
 </header>
 
 <!-- ══ Main ════════════════════════════════════════════════════════════════ -->
@@ -1044,11 +1200,10 @@
       <!-- Staffing slots (worksite only) -->
       <div class="form-row" id="wsSlotsSect">
         <label>Required Staffing <span style="font-size:10px;color:var(--muted2);font-weight:400">— role, headcount, period</span></label>
-        <div style="display:grid;grid-template-columns:1fr 44px 110px 110px 24px;gap:4px;margin-bottom:4px">
+        <div style="display:grid;grid-template-columns:1fr 55px 1fr 24px;gap:4px;margin-bottom:4px">
           <small style="color:var(--muted2);font-size:9px;padding-left:2px">Role</small>
-          <small style="color:var(--muted2);font-size:9px;text-align:center">×</small>
-          <small style="color:var(--muted2);font-size:9px;text-align:center">From</small>
-          <small style="color:var(--muted2);font-size:9px;text-align:center">To</small>
+          <small style="color:var(--muted2);font-size:9px;text-align:center">× Count</small>
+          <small style="color:var(--muted2);font-size:9px;text-align:center">Date range</small>
           <span></span>
         </div>
         <div id="wsSlotsList" style="display:flex;flex-direction:column;gap:5px"></div>
@@ -1059,6 +1214,43 @@
     <div class="modal-footer">
       <button class="btn-ghost" id="btnCancelWsEdit">Cancel</button>
       <button class="btn-primary" id="btnSaveWsEdit">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop hidden" id="slotDateModal">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="slotDateModalTitle">
+    <div class="modal-header">
+      <h3 id="slotDateModalTitle">Select Slot Date Range</h3>
+      <button class="btn-icon" id="btnCloseSlotDateModal" style="font-size:16px">✕</button>
+    </div>
+    <div class="modal-body">
+      <p id="slotDateModalInfo" style="font-size:12px;color:var(--muted);margin-bottom:10px"></p>
+      <div id="slotDatePickerEl"></div>
+      <div class="fp-legend" style="margin-top:10px">
+        <span><span class="fp-legend-dot" style="background:#3fb950"></span>Worksite days</span>
+        <span><span class="fp-legend-dot" style="background:var(--accentd)"></span>Selected</span>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" id="btnCancelSlotDate">Cancel</button>
+      <button class="btn-primary" id="btnConfirmSlotDate">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop hidden" id="assignSlotModal">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="assignSlotTitle">
+    <div class="modal-header">
+      <h3 id="assignSlotTitle">Assign Person</h3>
+      <button class="btn-icon" id="btnCloseAssignModal" style="font-size:16px">✕</button>
+    </div>
+    <div class="modal-body">
+      <p id="assignSlotInfo" style="font-size:12px;color:var(--muted);margin-bottom:12px"></p>
+      <div id="assignPersonList" class="assign-person-list"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" id="btnCancelAssign">Cancel</button>
     </div>
   </div>
 </div>
@@ -1283,6 +1475,12 @@ function globalDateRange() {
       if (!max || ed > max) max = ed;
     }
   }
+  for (const ws of (state.worksites || [])) {
+    if (!ws.startDate) continue;
+    if (!min || ws.startDate < min) min = ws.startDate;
+    const ed = ws.endDate || ws.startDate;
+    if (!max || ed > max) max = ed;
+  }
   if (!min) {
     const now = new Date();
     min = dayToISO(now);
@@ -1315,7 +1513,7 @@ function render() {
   document.getElementById('rowHeightLabel').textContent = rowHeight + 'px';
   pill.textContent = `${n} ${n === 1 ? 'person' : 'people'}`;
 
-  if (n === 0) { ledger.innerHTML = ''; empty.classList.remove('hidden'); return; }
+  if (n === 0 && !(state.worksites || []).length) { ledger.innerHTML = ''; empty.classList.remove('hidden'); return; }
   empty.classList.add('hidden');
 
   const { min: minDate, max: maxDate } = globalDateRange();
@@ -1402,42 +1600,160 @@ function render() {
         return `<div class="ws-slot-req"><span>${escHtml(s.role)}&times;${s.count}</span>${dots}</div>`;
       });
       slotSummaryHtml = `<div class="ws-slot-reqs">${slotItems.join('')}</div>`;
-
-      const demandBars = entry.slots.filter(s => s.role && s.startDate).map(s => {
-        const filled = slotFill(entry.id, s);
-        const fillCls = filled >= s.count ? 'filled' : filled > 0 ? 'partial' : 'unfilled';
-        const left  = daysBetween(minDate, s.startDate) * pxPerDay;
-        const width = Math.max((daysBetween(s.startDate, s.endDate || s.startDate) + 1) * pxPerDay - 4, 22);
-        return `<div class="ws-slot-bar ${fillCls}" style="left:${left}px;width:${width}px"
-                     title="${escHtml(s.role)} ×${s.count} (${filled} filled)">
-                  ${escHtml(s.role)} ×${s.count} <small style="opacity:.7">${filled}/${s.count}</small>
-                </div>`;
-      }).join('');
-      demandRowHtml = `<div class="gantt-ws-demandrow">${demandBars}</div>`;
+      // demandRowHtml stays '' — demand headers are embedded per-slot inside subRowsHtml
     }
 
-    const subRowsHtml = assignedList.map(({ person, ev }) => {
-      const evStart = ev.startDate || eStart;
-      const evEnd   = ev.endDate   || eEnd;
-      const left    = daysBetween(minDate, evStart) * pxPerDay;
-      const width   = Math.max((daysBetween(evStart, evEnd) + 1) * pxPerDay - 4, 22);
-      const color   = avatarColor(person.name);
-      const inits   = initials(person.name);
-      const tip     = `${person.name}${person.role ? ' · ' + person.role : ''} — ${ev.city} · ${fmtDate(evStart)}${evEnd !== evStart ? ' → ' + fmtDate(evEnd) : ''}`;
-      const avInner = person.photo
-        ? `<img src="${escHtml(person.photo)}" alt="${escHtml(inits)}"
-                onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
-           <span style="display:none;width:100%;height:100%;border-radius:50%;background:${color};align-items:center;justify-content:center;font-size:inherit">${escHtml(inits)}</span>`
-        : `<span style="display:flex;width:100%;height:100%;border-radius:50%;background:${color};align-items:center;justify-content:center;font-size:inherit">${escHtml(inits)}</span>`;
-      return `
-        <div class="gantt-ws-subrow" title="${escHtml(tip)}">
-          <div class="${barCls}" style="left:${left}px;width:${width}px">
-            <div class="ws-bar-av">${avInner}</div>
-            <span class="ws-bar-name">${escHtml(person.name)}</span>
-            ${person.role ? `<span class="ws-bar-role">${escHtml(person.role)}</span>` : ''}
-          </div>
-        </div>`;
-    }).join('');
+    const subRowsHtml = (() => {
+      // ── For worksites with slots: seat-driven layout, grouped per slot ────
+      if (isWs && (entry.slots || []).length) {
+        const usedEvIds = new Set();
+        let html = '';
+
+        for (const slot of entry.slots) {
+          // Demand header row for this slot
+          if (slot.role && slot.startDate) {
+            const filled  = slotFill(entry.id, slot);
+            const fillCls = filled >= slot.count ? 'filled' : filled > 0 ? 'partial' : 'unfilled';
+            const left  = daysBetween(minDate, slot.startDate) * pxPerDay;
+            const width = Math.max((daysBetween(slot.startDate, slot.endDate || slot.startDate) + 1) * pxPerDay - 4, 22);
+            html += `<div class="gantt-ws-demandrow">
+              <div class="ws-slot-bar ${fillCls}" style="left:${left}px;width:${width}px"
+                   title="${escHtml(slot.role)} ×${slot.count} (${filled} filled)">
+                ${escHtml(slot.role)} ×${slot.count} <small style="opacity:.7">${filled}/${slot.count}</small>
+              </div>
+            </div>`;
+          }
+
+          // Seat sub-rows for this slot
+          const fillers = state.people.filter(p => {
+            if (p.role !== slot.role) return false;
+            const ev = (p.events || []).find(e => e.type === 'worksite' && e.refId === entry.id && !usedEvIds.has(e.id));
+            if (!ev) return false;
+            const evEnd = ev.endDate || ev.startDate;
+            return ev.startDate <= (slot.endDate || slot.startDate) && evEnd >= slot.startDate;
+          });
+
+          for (let i = 0; i < slot.count; i++) {
+            const filler = fillers[i];
+            if (!filler) {
+              const left  = daysBetween(minDate, slot.startDate || eStart) * pxPerDay;
+              const width = Math.max((daysBetween(slot.startDate || eStart, slot.endDate || eEnd) + 1) * pxPerDay - 4, 80);
+              html += `
+                <div class="gantt-ws-subrow">
+                  <div class="ws-empty-slot"
+                       data-assign-ws="${entry.id}"
+                       data-slot-id="${slot.id}"
+                       style="left:${left}px;width:${width}px">
+                    <span>👤 ${escHtml(slot.role || '?')}</span>
+                    <span class="ws-empty-cta">+ Assign</span>
+                  </div>
+                </div>`;
+            } else {
+              const ev     = filler.events.find(e => e.type === 'worksite' && e.refId === entry.id && !usedEvIds.has(e.id));
+              usedEvIds.add(ev.id);
+              const evStart = ev.startDate || eStart;
+              const evEnd   = ev.endDate   || eEnd;
+              const left    = daysBetween(minDate, evStart) * pxPerDay;
+              const width   = Math.max((daysBetween(evStart, evEnd) + 1) * pxPerDay - 4, 22);
+              const color   = avatarColor(filler.name);
+              const inits   = initials(filler.name);
+              const tip     = `${filler.name}${filler.role ? ' · ' + filler.role : ''} — ${ev.city} · ${fmtDate(evStart)}${evEnd !== evStart ? ' → ' + fmtDate(evEnd) : ''}`;
+              const avInner = filler.photo
+                ? `<img src="${escHtml(filler.photo)}" alt="${escHtml(inits)}"
+                        onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+                   <span style="display:none;width:100%;height:100%;border-radius:50%;background:${color};align-items:center;justify-content:center;font-size:inherit">${escHtml(inits)}</span>`
+                : `<span style="display:flex;width:100%;height:100%;border-radius:50%;background:${color};align-items:center;justify-content:center;font-size:inherit">${escHtml(inits)}</span>`;
+              html += `
+                <div class="gantt-ws-subrow" title="${escHtml(tip)}">
+                  <div class="${barCls}" style="left:${left}px;width:${width}px"
+                       data-bar-pid="${filler.id}"
+                       data-bar-start="${evStart}"
+                       data-bar-end="${evEnd}"
+                       data-bar-color="${color}">
+                    <div class="ws-bar-av">${avInner}</div>
+                    <span class="ws-bar-name">${escHtml(filler.name)}</span>
+                    ${filler.role ? `<span class="ws-bar-role">${escHtml(filler.role)}</span>` : ''}
+                    <span class="ws-bar-btns">
+                      <button class="ws-bar-chain" data-chain-pid="${filler.id}" data-chain-after="${evEnd}" title="Chain next event">+</button>
+                      <button class="ws-bar-remove" data-remove-from-ws="${entry.id}" data-pid="${filler.id}" title="Remove">✕</button>
+                    </span>
+                  </div>
+                </div>`;
+            }
+          }
+        }
+
+        // Extra assigned people not captured by any slot
+        for (const { person, ev } of assignedList) {
+          if (usedEvIds.has(ev.id)) continue;
+          const evStart = ev.startDate || eStart;
+          const evEnd   = ev.endDate   || eEnd;
+          const left    = daysBetween(minDate, evStart) * pxPerDay;
+          const width   = Math.max((daysBetween(evStart, evEnd) + 1) * pxPerDay - 4, 22);
+          const color   = avatarColor(person.name);
+          const inits   = initials(person.name);
+          const tip     = `${person.name}${person.role ? ' · ' + person.role : ''} — ${ev.city} · ${fmtDate(evStart)}${evEnd !== evStart ? ' → ' + fmtDate(evEnd) : ''}`;
+          const avInner = person.photo
+            ? `<img src="${escHtml(person.photo)}" alt="${escHtml(inits)}"
+                    onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+               <span style="display:none;width:100%;height:100%;border-radius:50%;background:${color};align-items:center;justify-content:center;font-size:inherit">${escHtml(inits)}</span>`
+            : `<span style="display:flex;width:100%;height:100%;border-radius:50%;background:${color};align-items:center;justify-content:center;font-size:inherit">${escHtml(inits)}</span>`;
+          html += `
+            <div class="gantt-ws-subrow" title="${escHtml(tip)}">
+              <div class="${barCls}" style="left:${left}px;width:${width}px"
+                   data-bar-pid="${person.id}"
+                   data-bar-start="${evStart}"
+                   data-bar-end="${evEnd}"
+                   data-bar-color="${color}">
+                <div class="ws-bar-av">${avInner}</div>
+                <span class="ws-bar-name">${escHtml(person.name)}</span>
+                ${person.role ? `<span class="ws-bar-role">${escHtml(person.role)}</span>` : ''}
+                <span class="ws-bar-btns">
+                  <button class="ws-bar-chain" data-chain-pid="${person.id}" data-chain-after="${evEnd}" title="Chain next event">+</button>
+                  <button class="ws-bar-remove" data-remove-from-ws="${entry.id}" data-pid="${person.id}" title="Remove">✕</button>
+                </span>
+              </div>
+            </div>`;
+        }
+
+        return html;
+      }
+
+      // ── Fallback (no slots, or travel): original assigned-people list ──────
+      return assignedList.map(({ person, ev }) => {
+        const evStart = ev.startDate || eStart;
+        const evEnd   = ev.endDate   || eEnd;
+        const left    = daysBetween(minDate, evStart) * pxPerDay;
+        const width   = Math.max((daysBetween(evStart, evEnd) + 1) * pxPerDay - 4, 22);
+        const color   = avatarColor(person.name);
+        const inits   = initials(person.name);
+        const tip     = `${person.name}${person.role ? ' · ' + person.role : ''} — ${ev.city} · ${fmtDate(evStart)}${evEnd !== evStart ? ' → ' + fmtDate(evEnd) : ''}`;
+        const avInner = person.photo
+          ? `<img src="${escHtml(person.photo)}" alt="${escHtml(inits)}"
+                  onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+             <span style="display:none;width:100%;height:100%;border-radius:50%;background:${color};align-items:center;justify-content:center;font-size:inherit">${escHtml(inits)}</span>`
+          : `<span style="display:flex;width:100%;height:100%;border-radius:50%;background:${color};align-items:center;justify-content:center;font-size:inherit">${escHtml(inits)}</span>`;
+        const removeAttr = isWs
+          ? `data-remove-from-ws="${entry.id}" data-pid="${person.id}"`
+          : `data-remove-from-tr="${entry.id}" data-pid="${person.id}"`;
+        return `
+          <div class="gantt-ws-subrow" title="${escHtml(tip)}">
+            <div class="${barCls}" style="left:${left}px;width:${width}px"
+                 data-bar-pid="${person.id}"
+                 data-bar-start="${evStart}"
+                 data-bar-end="${evEnd}"
+                 data-bar-color="${color}">
+              <div class="ws-bar-av">${avInner}</div>
+              <span class="ws-bar-name">${escHtml(person.name)}</span>
+              ${person.role ? `<span class="ws-bar-role">${escHtml(person.role)}</span>` : ''}
+              <span class="ws-bar-btns">
+                <button class="ws-bar-chain" data-chain-pid="${person.id}" data-chain-after="${evEnd}" title="Chain next event">+</button>
+                <button class="ws-bar-remove" ${removeAttr} title="Remove">✕</button>
+              </span>
+            </div>
+          </div>`;
+      }).join('');
+    })();
 
     return `
       <div class="gantt-row">
@@ -1447,7 +1763,10 @@ function render() {
           <div class="gantt-ws-city">${escHtml(entry.city)}</div>
           <div class="gantt-ws-dates">${fmtDate(eStart)}${eEnd !== eStart ? ' → ' + fmtDate(eEnd) : ''}</div>
           ${slotSummaryHtml}
-          <button class="btn-edit-ws" ${editAttr}>✏ Edit</button>
+          <div class="ws-sidebar-actions">
+            <button ${editAttr}>Edit</button>
+            ${isWs ? `<button class="btn-del-ws" data-del-ws="${entry.id}">Delete</button>` : `<button class="btn-del-ws" data-del-tr="${entry.id}">Delete</button>`}
+          </div>
         </div>
         <div class="${trackCls}" style="width:${timelineW}px">
           ${todayLine}
@@ -1463,7 +1782,6 @@ function render() {
     const assigned = state.people
       .map(p => ({ person: p, ev: (p.events || []).find(e => e.type === 'worksite' && e.refId === ws.id) }))
       .filter(x => x.ev);
-    if (!assigned.length) continue;
     worksiteRowsHtml += sharedGroupRow(ws, 'worksite', assigned);
   }
 
@@ -1509,9 +1827,14 @@ function render() {
         ? ` · ${fmtDate(ev.startDate)} → ${fmtDate(endDate)}`
         : ` · ${fmtDate(ev.startDate)}`;
       return `<div class="ev-bar ev-${escHtml(ev.type)}" style="left:${left}px;width:${width}px"
+                   data-bar-pid="${person.id}"
+                   data-bar-start="${ev.startDate}"
+                   data-bar-end="${endDate}"
+                   data-bar-color="${avatarColor(person.name)}"
                    title="${escHtml(tooltip)}${rangeLabel}">
                 <span class="ev-icon">${icon}</span>
                 <span class="ev-lbl">${escHtml(label)}</span>
+                <button class="ev-chain" data-chain-pid="${person.id}" data-chain-after="${endDate}" title="Chain next event">+</button>
                 <button class="ev-del" data-pid="${person.id}" data-eid="${ev.id}" title="Remove">&#xD7;</button>
               </div>`;
     }).join('');
@@ -1522,8 +1845,9 @@ function render() {
           ${sidebarAvatar(person)}
           <div class="gantt-name">${escHtml(person.name)}</div>
           ${roleHtml}
-          <div class="meta-actions" style="margin-top:auto">
-            <button class="btn-icon" data-del-person="${person.id}" title="Remove person" style="font-size:11px">✕</button>
+          <div class="ws-sidebar-actions">
+            <button data-edit-person="${person.id}">Edit</button>
+            <button class="btn-del-ws" data-del-person="${person.id}">Delete</button>
           </div>
         </div>
         <div class="gantt-track" style="width:${timelineW}px">
@@ -1557,10 +1881,82 @@ function render() {
       ${trSectionHtml}
       ${peopleSectionHtml}
     </div>`;
+  drawConnectors();
+}
+
+// ══ Cross-row bezier connectors ═══════════════════════════════════════════════
+function drawConnectors() {
+  const inner = document.querySelector('.gantt-inner');
+  if (!inner) return;
+
+  // Remove stale overlay
+  const old = inner.querySelector('svg.connectors-svg');
+  if (old) old.remove();
+
+  // Collect all annotated bars
+  const bars = Array.from(document.querySelectorAll('[data-bar-pid]'));
+  if (!bars.length) return;
+
+  // Group by person id, sort by start date
+  const byPerson = {};
+  for (const bar of bars) {
+    const pid = bar.dataset.barPid;
+    (byPerson[pid] = byPerson[pid] || []).push(bar);
+  }
+
+  const innerRect = inner.getBoundingClientRect();
+  const paths = [];
+
+  for (const pid of Object.keys(byPerson)) {
+    const sorted = byPerson[pid].sort((a, b) =>
+      a.dataset.barStart < b.dataset.barStart ? -1 : 1
+    );
+    const color = sorted[0].dataset.barColor || '#58a6ff';
+
+    for (let i = 0; i < sorted.length - 1; i++) {
+      const a = sorted[i];
+      const b = sorted[i + 1];
+
+      // Only connect bars that live in different track containers
+      const trackA = a.closest('.gantt-track, .gantt-ws-track');
+      const trackB = b.closest('.gantt-track, .gantt-ws-track');
+      if (!trackA || !trackB || trackA === trackB) continue;
+
+      const rA = a.getBoundingClientRect();
+      const rB = b.getBoundingClientRect();
+
+      // Coordinates relative to gantt-inner's layout origin
+      const x1 = rA.right  - innerRect.left;
+      const y1 = rA.top    + rA.height / 2 - innerRect.top;
+      const x2 = rB.left   - innerRect.left;
+      const y2 = rB.top    + rB.height / 2 - innerRect.top;
+
+      // Pull: enough horizontal tension for a visible S-curve
+      const pull = Math.max(Math.abs(x2 - x1) * 0.55, 70);
+      const d = `M ${x1.toFixed(1)},${y1.toFixed(1)} C ${(x1+pull).toFixed(1)},${y1.toFixed(1)} ${(x2-pull).toFixed(1)},${y2.toFixed(1)} ${x2.toFixed(1)},${y2.toFixed(1)}`;
+      paths.push(`<path d="${d}" fill="none" stroke="${color}" stroke-width="2.5" stroke-opacity="0.75" stroke-linecap="round"/>`);
+      // Arrowhead at destination
+      const arrowLen = 8, arrowAng = 0.45;
+      const dx = x2 - (x2 - pull), dy = y2 - y2; // tangent at end is horizontal
+      paths.push(`<circle cx="${x2.toFixed(1)}" cy="${y2.toFixed(1)}" r="4" fill="${color}" fill-opacity="0.8"/>`);
+    }
+  }
+
+  if (!paths.length) return;
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.classList.add('connectors-svg');
+  svg.setAttribute('aria-hidden', 'true');
+  svg.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;overflow:visible;z-index:8';
+  svg.innerHTML = paths.join('\n');
+  inner.appendChild(svg);
 }
 
 // ══ Ledger event delegation ═══════════════════════════════════════════════════
 document.getElementById('ledger').addEventListener('click', e => {
+  // Edit person in person row
+  const editPerson = e.target.closest('[data-edit-person]');
+  if (editPerson) { openPersonModal(editPerson.dataset.editPerson); return; }
+
   // Remove event
   const delEv = e.target.closest('[data-eid]');
   if (delEv) {
@@ -1590,6 +1986,13 @@ document.getElementById('ledger').addEventListener('click', e => {
     return;
   }
 
+  // Chain next event
+  const chainBtn = e.target.closest('[data-chain-pid]');
+  if (chainBtn) {
+    openEventModal(chainBtn.dataset.chainPid, isoAddDays(chainBtn.dataset.chainAfter, 1));
+    return;
+  }
+
   // Add event
   const addEv = e.target.closest('[data-add-event]');
   if (addEv) openEventModal(addEv.dataset.addEvent);
@@ -1601,6 +2004,66 @@ document.getElementById('ledger').addEventListener('click', e => {
   // Edit travel group
   const editTr = e.target.closest('[data-edit-tr]');
   if (editTr) openSharedEditModal(editTr.dataset.editTr, 'travel');
+
+  // Remove person from worksite group row
+  const removeFromWs = e.target.closest('[data-remove-from-ws]');
+  if (removeFromWs) {
+    e.stopPropagation();
+    const { removeFromWs: wsId, pid } = removeFromWs.dataset;
+    const person = state.people.find(p => p.id === pid);
+    if (person) {
+      person.events = person.events.filter(ev => !(ev.type === 'worksite' && ev.refId === wsId));
+      gcShared('worksite'); save(); render();
+    }
+    return;
+  }
+
+  // Remove person from travel group row
+  const removeFromTr = e.target.closest('[data-remove-from-tr]');
+  if (removeFromTr) {
+    e.stopPropagation();
+    const { removeFromTr: trId, pid } = removeFromTr.dataset;
+    const person = state.people.find(p => p.id === pid);
+    if (person) {
+      person.events = person.events.filter(ev => !(ev.type === 'travel' && ev.refId === trId));
+      gcShared('travel'); save(); render();
+    }
+    return;
+  }
+
+  // Delete worksite entirely
+  const delWs = e.target.closest('[data-del-ws]');
+  if (delWs) {
+    const wsId = delWs.dataset.delWs;
+    const ws   = state.worksites.find(w => w.id === wsId);
+    if (ws && confirm(`Delete worksite "${ws.name}"? This will remove it from all people's events.`)) {
+      state.worksites = state.worksites.filter(w => w.id !== wsId);
+      for (const p of state.people) {
+        p.events = (p.events || []).filter(ev => !(ev.type === 'worksite' && ev.refId === wsId));
+      }
+      save(); render();
+    }
+    return;
+  }
+
+  // Delete travel group entirely
+  const delTr = e.target.closest('[data-del-tr]');
+  if (delTr) {
+    const trId = delTr.dataset.delTr;
+    const tr   = state.travels.find(t => t.id === trId);
+    if (tr && confirm(`Delete travel "${tr.name}"? This will remove it from all people's events.`)) {
+      state.travels = state.travels.filter(t => t.id !== trId);
+      for (const p of state.people) {
+        p.events = (p.events || []).filter(ev => !(ev.type === 'travel' && ev.refId === trId));
+      }
+      save(); render();
+    }
+    return;
+  }
+
+  // Assign person to empty worksite slot
+  const assignWs = e.target.closest('[data-assign-ws]');
+  if (assignWs) { openAssignSlotModal(assignWs.dataset.assignWs, assignWs.dataset.slotId); return; }
 });
 
 // ══ Person Modal ══════════════════════════════════════════════════════════════
@@ -1782,6 +2245,7 @@ roleInput.addEventListener('focus', function () {
 
 document.getElementById('btnAddPerson').addEventListener('click',      () => openPersonModal());
 document.getElementById('btnAddPersonEmpty').addEventListener('click', () => openPersonModal());
+document.getElementById('btnAddWorksite').addEventListener('click',    () => openSharedEditModal(null, 'worksite'));
 document.getElementById('btnClosePersonModal').addEventListener('click', closePersonModal);
 document.getElementById('btnCancelPerson').addEventListener('click',   closePersonModal);
 document.getElementById('btnSavePerson').addEventListener('mousedown', () => {
@@ -1833,7 +2297,7 @@ function refreshPeersHint(name) {
   peersEl.classList.remove('hidden');
 }
 
-function openEventModal(personId) {
+function openEventModal(personId, chainAfter = null) {
   evPersonId = personId;
   evType     = 'worksite';
   const person = state.people.find(p => p.id === personId);
@@ -1860,7 +2324,7 @@ function openEventModal(personId) {
     inline:      true,
     mode:        'range',
     dateFormat:  'Y-m-d',
-    defaultDate: new Date(),
+    defaultDate: chainAfter ? isoToDay(chainAfter) : new Date(),
     onDayCreate(_dObj, _dStr, _fp, dayElem) {
       const iso = dayElem.dateObj ? dayToISO(dayElem.dateObj) : null;
       if (iso && occupied.has(iso)) dayElem.classList.add('occupied-day');
@@ -2157,15 +2621,17 @@ let editingSharedType = 'worksite';
 let fpWsDate          = null;
 
 function wsSlotRowHtml(slot, defStart, defEnd) {
-  const sid = slot.id || uid();
-  return `<div class="ws-slot-row" data-sid="${escHtml(sid)}">
+  const sid      = slot.id || uid();
+  const s        = slot.startDate || defStart || '';
+  const e        = slot.endDate   || defEnd   || '';
+  const label    = s ? (e && e !== s ? `${fmtDate(s)} → ${fmtDate(e)}` : fmtDate(s)) : 'Pick range…';
+  return `<div class="ws-slot-row" data-sid="${escHtml(sid)}" data-fp-start="${escHtml(s)}" data-fp-end="${escHtml(e)}">
     <div class="role-wrap" style="position:relative">
       <input type="text" class="ws-slot-role" placeholder="Role" value="${escHtml(slot.role || '')}" autocomplete="off">
       <div class="role-dropdown hidden ws-slot-role-dd"></div>
     </div>
-    <input type="number" class="ws-slot-count" min="1" max="99" value="${slot.count || 1}" title="Headcount">
-    <input type="date" class="ws-slot-start" value="${escHtml(slot.startDate || defStart || '')}">
-    <input type="date" class="ws-slot-end"   value="${escHtml(slot.endDate   || defEnd   || '')}">
+    <input type="text" class="ws-slot-count" inputmode="numeric" placeholder="1" value="${slot.count || 1}" title="Headcount">
+    <input type="text" class="ws-slot-date-trigger" readonly placeholder="Pick range…" value="${escHtml(label)}">
     <button type="button" class="btn-icon ws-slot-del" title="Remove">✕</button>
   </div>`;
 }
@@ -2190,11 +2656,97 @@ function attachSlotRoleAutocomplete(wrap) {
   input.addEventListener('focus', function () { if (this.value) this.dispatchEvent(new Event('input')); });
 }
 
+function attachSlotCountMask(input) {
+  if (input.dataset.masked) return;
+  input.dataset.masked = '1';
+  input.addEventListener('input', function () {
+    this.value = this.value.replace(/[^0-9]/g, '').replace(/^0+/, '') || '1';
+  });
+  input.addEventListener('blur', function () {
+    const n = parseInt(this.value) || 1;
+    this.value = Math.min(Math.max(n, 1), 99);
+  });
+}
+
+function attachSlotDatePicker(row, wsStart, wsEnd) {
+  const trigger = row.querySelector('.ws-slot-date-trigger');
+  if (!trigger || trigger._slotDpBound) return;
+  trigger._slotDpBound = true;
+  trigger.addEventListener('click', () => openSlotDateModal(row, wsStart, wsEnd));
+}
+
 function renderWsSlots(slots, defStart, defEnd) {
   const list = document.getElementById('wsSlotsList');
   list.innerHTML = slots.map(s => wsSlotRowHtml(s, defStart, defEnd)).join('');
-  list.querySelectorAll('.role-wrap').forEach(attachSlotRoleAutocomplete);
+  list.querySelectorAll('.ws-slot-row').forEach(row => {
+    attachSlotRoleAutocomplete(row.querySelector('.role-wrap'));
+    attachSlotCountMask(row.querySelector('.ws-slot-count'));
+    attachSlotDatePicker(row, defStart, defEnd);
+  });
 }
+
+// ══ Slot date-range modal ══════════════════════════════════════════════════════
+let _slotDateCurrentRow = null;
+let _fpSlotDate         = null;
+
+function openSlotDateModal(row, wsStart, wsEnd) {
+  _slotDateCurrentRow = row;
+
+  const ws = state.worksites.find(w => w.id === editingWsId);
+  document.getElementById('slotDateModalInfo').textContent =
+    ws ? `Worksite: ${ws.name}  ·  ${fmtDate(wsStart)} → ${fmtDate(wsEnd || wsStart)}` : '';
+
+  const selStart = row.dataset.fpStart || wsStart || '';
+  const selEnd   = row.dataset.fpEnd   || wsEnd   || '';
+  const defaults = selStart ? (selEnd && selEnd !== selStart ? [selStart, selEnd] : [selStart]) : [];
+
+  if (_fpSlotDate) { _fpSlotDate.destroy(); _fpSlotDate = null; }
+  const container = document.getElementById('slotDatePickerEl');
+  container.innerHTML = '';
+
+  _fpSlotDate = flatpickr(container, {
+    inline:      true,
+    mode:        'range',
+    dateFormat:  'Y-m-d',
+    defaultDate: defaults.length ? defaults : undefined,
+    onDayCreate(_dObj, _dStr, _fpInst, dayElem) {
+      if (!wsStart || !wsEnd) return;
+      const d = dayElem.dateObj ? dayToISO(dayElem.dateObj) : null;
+      if (!d) return;
+      if (d >= wsStart && d <= wsEnd) dayElem.classList.add('ws-avail-day');
+    }
+  });
+
+  document.getElementById('slotDateModal').classList.remove('hidden');
+}
+
+function closeSlotDateModal() {
+  document.getElementById('slotDateModal').classList.add('hidden');
+  _slotDateCurrentRow = null;
+}
+
+function confirmSlotDate() {
+  if (!_fpSlotDate || !_slotDateCurrentRow) { closeSlotDateModal(); return; }
+  const dates = _fpSlotDate.selectedDates;
+  if (!dates.length) { closeSlotDateModal(); return; }
+  const row     = _slotDateCurrentRow;
+  const trigger = row.querySelector('.ws-slot-date-trigger');
+  row.dataset.fpStart = dayToISO(dates[0]);
+  row.dataset.fpEnd   = dates[1] ? dayToISO(dates[1]) : dayToISO(dates[0]);
+  if (trigger) {
+    trigger.value = row.dataset.fpEnd !== row.dataset.fpStart
+      ? `${fmtDate(row.dataset.fpStart)} → ${fmtDate(row.dataset.fpEnd)}`
+      : fmtDate(row.dataset.fpStart);
+  }
+  closeSlotDateModal();
+}
+
+document.getElementById('btnCloseSlotDateModal').addEventListener('click', closeSlotDateModal);
+document.getElementById('btnCancelSlotDate').addEventListener('click',     closeSlotDateModal);
+document.getElementById('btnConfirmSlotDate').addEventListener('click',    confirmSlotDate);
+document.getElementById('slotDateModal').addEventListener('click', e => {
+  if (e.target === document.getElementById('slotDateModal')) closeSlotDateModal();
+});
 
 // Slot add/remove delegation
 document.getElementById('wsSlotsList').addEventListener('click', e => {
@@ -2206,38 +2758,46 @@ document.getElementById('btnAddWsSlot').addEventListener('click', () => {
   const html = wsSlotRowHtml({ id: uid(), role: '', count: 1 }, ws?.startDate, ws?.endDate);
   const list = document.getElementById('wsSlotsList');
   list.insertAdjacentHTML('beforeend', html);
-  attachSlotRoleAutocomplete(list.lastElementChild.querySelector('.role-wrap'));
-  list.lastElementChild.querySelector('.ws-slot-role').focus();
+  const newRow = list.lastElementChild;
+  attachSlotRoleAutocomplete(newRow.querySelector('.role-wrap'));
+  attachSlotCountMask(newRow.querySelector('.ws-slot-count'));
+  attachSlotDatePicker(newRow, ws?.startDate, ws?.endDate);
+  newRow.querySelector('.ws-slot-role').focus();
 });
 
 function openSharedEditModal(id, type) {
-  const list  = type === 'worksite' ? state.worksites : state.travels;
-  const entry = list.find(e => e.id === id);
-  if (!entry) return;
+  const isNew  = !id;
+  const list   = type === 'worksite' ? state.worksites : state.travels;
+  const entry  = isNew ? null : list.find(e => e.id === id);
+  if (!isNew && !entry) return;
   editingWsId       = id;
   editingSharedType = type;
 
   document.getElementById('sharedEditModalTitle').textContent =
-    type === 'worksite' ? 'Edit Worksite' : 'Edit Travel';
+    isNew
+      ? (type === 'worksite' ? 'New Worksite' : 'New Travel')
+      : (type === 'worksite' ? 'Edit Worksite' : 'Edit Travel');
 
-  document.getElementById('wsEditName').value = entry.name;
-  document.getElementById('wsEditCity').value = entry.city;
+  document.getElementById('wsEditName').value = entry?.name || '';
+  document.getElementById('wsEditCity').value = entry?.city || '';
   document.getElementById('wsEditName').classList.remove('err');
   document.getElementById('wsEditCity').classList.remove('err');
   document.getElementById('wsEditDateErr').classList.add('hidden');
 
   // Show/hide slots section for worksites only
   document.getElementById('wsSlotsSect').classList.toggle('hidden', type !== 'worksite');
-  if (type === 'worksite') renderWsSlots(entry.slots || [], entry.startDate, entry.endDate);
+  if (type === 'worksite') renderWsSlots(entry?.slots || [], entry?.startDate, entry?.endDate);
 
   if (fpWsDate) fpWsDate.destroy();
   fpWsDate = flatpickr('#wsEditDatePicker', {
-    inline:      true,
-    mode:        'range',
-    dateFormat:  'Y-m-d',
-    defaultDate: entry.endDate && entry.endDate !== entry.startDate
-      ? [entry.startDate, entry.endDate]
-      : [entry.startDate]
+    inline:     true,
+    mode:       'range',
+    dateFormat: 'Y-m-d',
+    defaultDate: (!isNew && entry?.startDate)
+      ? (entry.endDate && entry.endDate !== entry.startDate
+          ? [entry.startDate, entry.endDate]
+          : [entry.startDate])
+      : undefined
   });
 
   document.getElementById('wsEditModal').classList.remove('hidden');
@@ -2246,6 +2806,107 @@ function openSharedEditModal(id, type) {
 
 // Keep backward-compatible alias used in event delegation
 function openWsEditModal(wsId) { openSharedEditModal(wsId, 'worksite'); }
+
+// ══ Assign-to-slot modal ══════════════════════════════════════════════════════
+let assigningWsId   = null;
+let assigningSlotId = null;
+
+function openAssignSlotModal(wsId, slotId) {
+  const ws   = state.worksites.find(w => w.id === wsId);
+  if (!ws) return;
+  const slot = (ws.slots || []).find(s => s.id === slotId);
+  assigningWsId   = wsId;
+  assigningSlotId = slotId;
+
+  const roleName = slot ? slot.role : '';
+  document.getElementById('assignSlotTitle').textContent   = roleName ? `Assign — ${roleName}` : 'Assign Person';
+  document.getElementById('assignSlotInfo').textContent    = slot
+    ? `Worksite: ${ws.name}  ·  Role: ${roleName}  ·  ${fmtDate(slot.startDate)} → ${fmtDate(slot.endDate || slot.startDate)}`
+    : `Worksite: ${ws.name}`;
+
+  // Already assigned person ids
+  const assignedIds = new Set(
+    state.people.filter(p => (p.events || []).some(ev => ev.type === 'worksite' && ev.refId === wsId)).map(p => p.id)
+  );
+
+  const matched  = state.people.filter(p => p.role === roleName && !assignedIds.has(p.id));
+  const others   = state.people.filter(p => p.role !== roleName && !assignedIds.has(p.id));
+  const assigned = state.people.filter(p => assignedIds.has(p.id));
+
+  function personItem(p, badge) {
+    const color   = avatarColor(p.name);
+    const inits   = initials(p.name);
+    const avHtml  = p.photo
+      ? `<img src="${escHtml(p.photo)}" style="width:32px;height:32px;border-radius:50%;object-fit:cover" onerror="this.style.display='none'">`
+      : `<div style="width:32px;height:32px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0">${escHtml(inits)}</div>`;
+    return `<div class="assign-person-item" data-assign-pid="${p.id}">
+      ${avHtml}
+      <div style="flex:1;min-width:0">
+        <div class="assign-person-item-name">${escHtml(p.name)}</div>
+        ${p.role ? `<div class="assign-person-item-role">${escHtml(p.role)}</div>` : ''}
+      </div>
+      ${badge ? `<span class="assign-match-badge">${badge}</span>` : ''}
+    </div>`;
+  }
+
+  let html = '';
+  if (matched.length) {
+    html += `<div class="assign-section-hdr">⭐ Suggested (matching role)</div>`;
+    html += matched.map(p => personItem(p, 'match')).join('');
+  }
+  if (others.length) {
+    html += `<div class="assign-section-hdr" style="margin-top:10px">All people</div>`;
+    html += others.map(p => personItem(p, '')).join('');
+  }
+  if (assigned.length) {
+    html += `<div class="assign-section-hdr" style="margin-top:10px">Already on this worksite</div>`;
+    html += assigned.map(p => `<div class="assign-person-item" style="opacity:.45;cursor:default;pointer-events:none">
+      <div style="width:32px;height:32px;border-radius:50%;background:${avatarColor(p.name)};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0">${escHtml(initials(p.name))}</div>
+      <div style="flex:1"><div class="assign-person-item-name">${escHtml(p.name)}</div></div>
+      <span class="assign-match-badge" style="background:rgba(63,185,80,.2);color:#56d364">✓ assigned</span>
+    </div>`).join('');
+  }
+  if (!html) html = '<p style="color:var(--muted);font-size:12px">No people available to assign.</p>';
+
+  document.getElementById('assignPersonList').innerHTML = html;
+  document.getElementById('assignSlotModal').classList.remove('hidden');
+}
+
+function closeAssignSlotModal() {
+  document.getElementById('assignSlotModal').classList.add('hidden');
+  assigningWsId = assigningSlotId = null;
+}
+
+document.getElementById('assignPersonList').addEventListener('click', e => {
+  const item = e.target.closest('[data-assign-pid]');
+  if (!item) return;
+  const pid    = item.dataset.assignPid;
+  const ws     = state.worksites.find(w => w.id === assigningWsId);
+  const slot   = ws && (ws.slots || []).find(s => s.id === assigningSlotId);
+  const person = state.people.find(p => p.id === pid);
+  if (!person || !ws) return;
+  // Don't add duplicate
+  const already = (person.events || []).find(ev => ev.type === 'worksite' && ev.refId === ws.id);
+  if (!already) {
+    person.events.push({
+      id:        uid(),
+      type:      'worksite',
+      refId:     ws.id,
+      city:      ws.city,
+      startDate: slot ? slot.startDate : ws.startDate,
+      endDate:   slot ? (slot.endDate || slot.startDate) : ws.endDate,
+    });
+    save();
+  }
+  closeAssignSlotModal();
+  render();
+});
+
+document.getElementById('btnCloseAssignModal').addEventListener('click',  closeAssignSlotModal);
+document.getElementById('btnCancelAssign').addEventListener('click',      closeAssignSlotModal);
+document.getElementById('assignSlotModal').addEventListener('click', e => {
+  if (e.target === document.getElementById('assignSlotModal')) closeAssignSlotModal();
+});
 
 function closeWsEditModal() {
   document.getElementById('wsEditModal').classList.add('hidden');
@@ -2276,10 +2937,21 @@ function saveWsEditModal() {
   const startDate = dayToISO(selDates[0]);
   const endDate   = selDates[1] ? dayToISO(selDates[1]) : startDate;
 
-  const list  = editingSharedType === 'worksite' ? state.worksites : state.travels;
-  const entry = list.find(e => e.id === editingWsId);
-  if (!entry) return;
-  entry.name = name; entry.city = city; entry.startDate = startDate; entry.endDate = endDate;
+  const list = editingSharedType === 'worksite' ? state.worksites : state.travels;
+
+  // New vs edit
+  let entry;
+  if (!editingWsId) {
+    // Creating a new entry
+    const newId = uid();
+    entry = { id: newId, name, city, startDate, endDate, slots: [] };
+    list.push(entry);
+    editingWsId = newId; // so slot collection below can reference it
+  } else {
+    entry = list.find(e => e.id === editingWsId);
+    if (!entry) return;
+    entry.name = name; entry.city = city; entry.startDate = startDate; entry.endDate = endDate;
+  }
 
   // Collect and save slots (worksite only)
   if (editingSharedType === 'worksite') {
@@ -2287,8 +2959,8 @@ function saveWsEditModal() {
       id:        row.dataset.sid || uid(),
       role:      row.querySelector('.ws-slot-role').value.trim(),
       count:     Math.max(1, parseInt(row.querySelector('.ws-slot-count').value) || 1),
-      startDate: row.querySelector('.ws-slot-start').value || startDate,
-      endDate:   row.querySelector('.ws-slot-end').value   || endDate,
+      startDate: row.dataset.fpStart || startDate,
+      endDate:   row.dataset.fpEnd   || endDate,
     })).filter(s => s.role);
   }
 
@@ -2320,6 +2992,8 @@ document.addEventListener('keydown', e => {
     closePersonModal();
     closeEventModal();
     closeWsEditModal();
+    closeSlotDateModal();
+    closeAssignSlotModal();
     return;
   }
   if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
