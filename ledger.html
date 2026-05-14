@@ -375,6 +375,27 @@
       font-family: inherit;
     }
     .ev-chain:hover { background: rgba(35,134,54,.85); }
+    .ev-chain.ev-chain-end { right: 4px; }
+    .ev-bar:hover .ev-edit { display: flex; }
+    .ev-edit {
+      position: absolute;
+      right: 24px; top: 50%;
+      transform: translateY(-50%);
+      background: rgba(0,0,0,.4);
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      width: 16px; height: 16px;
+      font-size: 10px;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      cursor: pointer;
+      line-height: 1;
+      font-family: inherit;
+    }
+    .ev-edit:hover { background: rgba(56,139,253,.85); }
 
     .ev-peer-badge {
       flex-shrink: 0;
@@ -715,27 +736,6 @@
       box-sizing: border-box;
     }
     .ws-slot-date-trigger:focus { outline: none; border-color: var(--accent); }
-
-    .btn-add-ev {
-      position: absolute;
-      right: 8px;
-      top: 50%;
-      transform: translateY(-50%);
-      background: transparent;
-      color: var(--accent);
-      border: 1px dashed var(--accentd);
-      border-radius: 6px;
-      padding: 3px 10px;
-      font-size: 11px;
-      font-family: inherit;
-      cursor: pointer;
-      white-space: nowrap;
-      opacity: 0;
-      transition: opacity .15s, background .12s;
-      z-index: 3;
-    }
-    .gantt-row:hover .btn-add-ev { opacity: 1; }
-    .btn-add-ev:hover { background: rgba(88,166,255,.08); }
 
     /* Zoom controls */
     .zoom-controls {
@@ -1163,6 +1163,17 @@
         </div>
       </div>
 
+      <!-- Home (only for new person) -->
+      <div class="form-row" id="personHomeSection" style="display:none">
+        <label style="font-weight:600;color:var(--text)">Starting Home <span style="color:var(--red)">*</span></label>
+        <div class="role-wrap" style="margin-top:4px">
+          <input type="text" id="personHomeCity" placeholder="Home city…" autocomplete="off">
+          <div class="role-dropdown hidden" id="personHomeCityDropdown"></div>
+        </div>
+        <div id="personHomeDatePicker" style="margin-top:6px"></div>
+        <div class="date-err-msg hidden" id="personHomeDateErr">Please select at least a start date.</div>
+      </div>
+
     </div>
     <div class="modal-footer">
       <button class="btn-ghost" id="btnCancelPerson">Cancel</button>
@@ -1258,7 +1269,7 @@
 <div class="modal-backdrop hidden" id="eventModal">
   <div class="modal modal-wide" role="dialog" aria-modal="true">
     <div class="modal-header">
-      <h3>Add Event</h3>
+      <h3 id="eventModalTitle">Add Event</h3>
       <button class="btn-icon" id="btnCloseEventModal" style="font-size:16px">✕</button>
     </div>
     <div class="modal-body">
@@ -1812,7 +1823,7 @@ function render() {
       ? `<span class="person-role" title="${escHtml(person.role)}">${escHtml(person.role)}</span>`
       : '';
 
-    const barsHtml = events.map(ev => {
+    const barsHtml = events.map((ev, idx) => {
       const startOff = daysBetween(minDate, ev.startDate);
       const endDate  = ev.endDate || ev.startDate;
       const endOff   = daysBetween(minDate, endDate);
@@ -1826,6 +1837,12 @@ function render() {
       const rangeLabel = endDate !== ev.startDate
         ? ` · ${fmtDate(ev.startDate)} → ${fmtDate(endDate)}`
         : ` · ${fmtDate(ev.startDate)}`;
+      const isFirst = idx === 0;
+      const btns = isFirst
+        ? `<button class="ev-edit" data-edit-ev="${ev.id}" data-pid="${person.id}" title="Edit">&#x270F;</button>
+               <button class="ev-chain ev-chain-end" data-chain-pid="${person.id}" data-chain-after="${endDate}" title="Chain next event">+</button>`
+        : `<button class="ev-chain" data-chain-pid="${person.id}" data-chain-after="${endDate}" title="Chain next event">+</button>
+               <button class="ev-del" data-pid="${person.id}" data-eid="${ev.id}" title="Remove">×</button>`;
       return `<div class="ev-bar ev-${escHtml(ev.type)}" style="left:${left}px;width:${width}px"
                    data-bar-pid="${person.id}"
                    data-bar-start="${ev.startDate}"
@@ -1834,8 +1851,7 @@ function render() {
                    title="${escHtml(tooltip)}${rangeLabel}">
                 <span class="ev-icon">${icon}</span>
                 <span class="ev-lbl">${escHtml(label)}</span>
-                <button class="ev-chain" data-chain-pid="${person.id}" data-chain-after="${endDate}" title="Chain next event">+</button>
-                <button class="ev-del" data-pid="${person.id}" data-eid="${ev.id}" title="Remove">&#xD7;</button>
+                ${btns}
               </div>`;
     }).join('');
 
@@ -1853,7 +1869,6 @@ function render() {
         <div class="gantt-track" style="width:${timelineW}px">
           ${todayLine}
           ${barsHtml}
-          <button class="btn-add-ev" data-add-event="${person.id}">＋ Event</button>
         </div>
       </div>`;
   }).join('');
@@ -1957,6 +1972,10 @@ document.getElementById('ledger').addEventListener('click', e => {
   const editPerson = e.target.closest('[data-edit-person]');
   if (editPerson) { openPersonModal(editPerson.dataset.editPerson); return; }
 
+  // Edit event (first bar only)
+  const editEv = e.target.closest('[data-edit-ev]');
+  if (editEv) { openEventModal(editEv.dataset.pid, null, editEv.dataset.editEv); return; }
+
   // Remove event
   const delEv = e.target.closest('[data-eid]');
   if (delEv) {
@@ -1992,10 +2011,6 @@ document.getElementById('ledger').addEventListener('click', e => {
     openEventModal(chainBtn.dataset.chainPid, isoAddDays(chainBtn.dataset.chainAfter, 1));
     return;
   }
-
-  // Add event
-  const addEv = e.target.closest('[data-add-event]');
-  if (addEv) openEventModal(addEv.dataset.addEvent);
 
   // Edit worksite
   const editWs = e.target.closest('[data-edit-ws]');
@@ -2074,6 +2089,7 @@ function openPersonModal(personId) {
   const isEdit = !!editingPersonId;
 
   document.getElementById('personModalTitle').textContent = isEdit ? 'Edit Person' : 'Add Person';
+  document.getElementById('personHomeSection').style.display = isEdit ? 'none' : '';
 
   if (isEdit) {
     const p = state.people.find(p => p.id === editingPersonId);
@@ -2086,7 +2102,18 @@ function openPersonModal(personId) {
     document.getElementById('personRole').value     = '';
     document.getElementById('personPhotoUrl').value = '';
     document.getElementById('personPhotoFile').value = '';
+    document.getElementById('personHomeCity').value = '';
+    document.getElementById('personHomeCity').classList.remove('err');
+    document.getElementById('personHomeDateErr').classList.add('hidden');
     refreshPhotoPreview('', '');
+
+    if (fpPersonHome) fpPersonHome.destroy();
+    fpPersonHome = flatpickr('#personHomeDatePicker', {
+      inline:     true,
+      mode:       'range',
+      dateFormat: 'Y-m-d',
+      defaultDate: new Date(),
+    });
   }
 
   document.getElementById('personName').classList.remove('err');
@@ -2098,6 +2125,8 @@ function closePersonModal() {
   document.getElementById('personModal').classList.add('hidden');
   document.getElementById('personPhotoFile').value = '';
   document.getElementById('roleDropdown').classList.add('hidden');
+  document.getElementById('personHomeCityDropdown').classList.add('hidden');
+  if (fpPersonHome) { fpPersonHome.destroy(); fpPersonHome = null; }
 }
 
 function savePersonModal() {
@@ -2116,7 +2145,30 @@ function savePersonModal() {
     const p = state.people.find(p => p.id === editingPersonId);
     if (p) { p.name = name; p.role = role; p.photo = photo; }
   } else {
-    state.people.push({ id: uid(), name, role, photo, events: [] });
+    // Validate home city + date
+    const homeCity = document.getElementById('personHomeCity').value.trim();
+    let homeErr = false;
+    if (!homeCity) {
+      document.getElementById('personHomeCity').classList.add('err');
+      homeErr = true;
+    } else {
+      document.getElementById('personHomeCity').classList.remove('err');
+    }
+    const homeDates = fpPersonHome?.selectedDates || [];
+    if (!homeDates.length) {
+      document.getElementById('personHomeDateErr').classList.remove('hidden');
+      homeErr = true;
+    } else {
+      document.getElementById('personHomeDateErr').classList.add('hidden');
+    }
+    if (homeErr) return;
+
+    const startDate = dayToISO(homeDates[0]);
+    const endDate   = homeDates[1] ? dayToISO(homeDates[1]) : startDate;
+    state.people.push({
+      id: uid(), name, role, photo,
+      events: [{ id: uid(), type: 'home', city: homeCity, startDate, endDate }]
+    });
   }
 
   upsertRole(role);
@@ -2257,9 +2309,11 @@ document.getElementById('btnCancelPerson').addEventListener('mousedown', () => {
 });
 
 // ══ Event Modal ════════════════════════════════════════════════════════════
-let evPersonId = null;
-let fpEvDate   = null;
-let evType     = 'worksite';
+let evPersonId   = null;
+let fpEvDate     = null;
+let fpPersonHome = null;
+let editingEvId  = null;
+let evType       = 'worksite';
 
 function evSharedList() {
   return evType === 'worksite' ? state.worksites : state.travels;
@@ -2297,47 +2351,85 @@ function refreshPeersHint(name) {
   peersEl.classList.remove('hidden');
 }
 
-function openEventModal(personId, chainAfter = null) {
-  evPersonId = personId;
-  evType     = 'worksite';
+function openEventModal(personId, chainAfter = null, editEvId = null) {
+  evPersonId  = personId;
+  editingEvId = editEvId || null;
   const person = state.people.find(p => p.id === personId);
-  document.getElementById('evPersonLabel').textContent = person ? person.name : '';
-  document.getElementById('evSharedName').value = '';
-  document.getElementById('evSharedName').classList.remove('err');
-  document.getElementById('evSharedDropdown').classList.add('hidden');
-  document.getElementById('evSharedPeers').classList.add('hidden');
-  document.getElementById('eventCity').value = '';
-  document.getElementById('eventCity').classList.remove('err');
-  document.getElementById('evDateErrMsg').style.display = 'none';
+  const typeRow = document.getElementById('evTypeSel').closest('.form-row');
 
-  // Reset type selector
-  document.querySelectorAll('.ev-type-btn').forEach(b => {
-    b.classList.toggle('active', b.dataset.type === 'worksite');
-  });
-
-  applyEvTypeUI(person);
-
-  const occupied = getOccupiedDays(person || { events: [] });
-
-  if (fpEvDate) fpEvDate.destroy();
-  fpEvDate = flatpickr('#eventDatePicker', {
-    inline:      true,
-    mode:        'range',
-    dateFormat:  'Y-m-d',
-    defaultDate: chainAfter ? isoToDay(chainAfter) : new Date(),
-    onDayCreate(_dObj, _dStr, _fp, dayElem) {
-      const iso = dayElem.dateObj ? dayToISO(dayElem.dateObj) : null;
-      if (iso && occupied.has(iso)) dayElem.classList.add('occupied-day');
-    }
-  });
+  if (editingEvId) {
+    const ev = (person?.events || []).find(e => e.id === editingEvId);
+    evType = ev?.type || 'home';
+    document.getElementById('eventModalTitle').textContent = 'Edit Event';
+    document.getElementById('btnSaveEvent').textContent   = 'Update Event';
+    typeRow.style.display = 'none';
+    document.getElementById('evPersonLabel').textContent = person ? person.name : '';
+    document.getElementById('evSharedName').value = '';
+    document.getElementById('evSharedDropdown').classList.add('hidden');
+    document.getElementById('evSharedPeers').classList.add('hidden');
+    document.getElementById('eventCity').value = ev?.city || '';
+    document.getElementById('eventCity').classList.remove('err');
+    document.getElementById('evDateErrMsg').style.display = 'none';
+    document.querySelectorAll('.ev-type-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.type === evType);
+    });
+    applyEvTypeUI(person);
+    const occupied = getOccupiedDays(person || { events: [] });
+    if (fpEvDate) fpEvDate.destroy();
+    fpEvDate = flatpickr('#eventDatePicker', {
+      inline:      true,
+      mode:        'range',
+      dateFormat:  'Y-m-d',
+      defaultDate: ev?.startDate
+        ? [isoToDay(ev.startDate), isoToDay(ev.endDate || ev.startDate)]
+        : new Date(),
+      onDayCreate(_dObj, _dStr, _fp, dayElem) {
+        const iso = dayElem.dateObj ? dayToISO(dayElem.dateObj) : null;
+        if (iso && occupied.has(iso)) dayElem.classList.add('occupied-day');
+      }
+    });
+  } else {
+    evType = 'worksite';
+    document.getElementById('eventModalTitle').textContent = 'Add Event';
+    document.getElementById('btnSaveEvent').textContent   = 'Add Event';
+    typeRow.style.display = '';
+    document.getElementById('evPersonLabel').textContent = person ? person.name : '';
+    document.getElementById('evSharedName').value = '';
+    document.getElementById('evSharedName').classList.remove('err');
+    document.getElementById('evSharedDropdown').classList.add('hidden');
+    document.getElementById('evSharedPeers').classList.add('hidden');
+    document.getElementById('eventCity').value = '';
+    document.getElementById('eventCity').classList.remove('err');
+    document.getElementById('evDateErrMsg').style.display = 'none';
+    document.querySelectorAll('.ev-type-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.type === 'worksite');
+    });
+    applyEvTypeUI(person);
+    const occupied = getOccupiedDays(person || { events: [] });
+    if (fpEvDate) fpEvDate.destroy();
+    fpEvDate = flatpickr('#eventDatePicker', {
+      inline:      true,
+      mode:        'range',
+      dateFormat:  'Y-m-d',
+      defaultDate: chainAfter ? isoToDay(chainAfter) : new Date(),
+      onDayCreate(_dObj, _dStr, _fp, dayElem) {
+        const iso = dayElem.dateObj ? dayToISO(dayElem.dateObj) : null;
+        if (iso && occupied.has(iso)) dayElem.classList.add('occupied-day');
+      }
+    });
+  }
 
   document.getElementById('eventModal').classList.remove('hidden');
 }
 
 function closeEventModal() {
+  editingEvId = null;
   document.getElementById('eventModal').classList.add('hidden');
   document.getElementById('eventCityDropdown').classList.add('hidden');
   document.getElementById('evSharedDropdown').classList.add('hidden');
+  document.getElementById('evTypeSel').closest('.form-row').style.display = '';
+  document.getElementById('eventModalTitle').textContent = 'Add Event';
+  document.getElementById('btnSaveEvent').textContent   = 'Add Event';
 }
 
 function saveEventModal() {
@@ -2378,7 +2470,10 @@ function saveEventModal() {
   if (!person) return;
   person.events = person.events || [];
 
-  if (isShared) {
+  if (editingEvId) {
+    const ev = person.events.find(e => e.id === editingEvId);
+    if (ev) { ev.city = city; ev.startDate = startDate; ev.endDate = endDate; }
+  } else if (isShared) {
     const refId = upsertShared(evType, { name, city, startDate, endDate });
     person.events.push({ id: uid(), type: evType, refId, city, startDate, endDate });
   } else {
@@ -2608,6 +2703,11 @@ function attachCityAutocomplete(inputEl, dropdownEl) {
 attachCityAutocomplete(
   document.getElementById('eventCity'),
   document.getElementById('eventCityDropdown')
+);
+// Attach to person modal home city field
+attachCityAutocomplete(
+  document.getElementById('personHomeCity'),
+  document.getElementById('personHomeCityDropdown')
 );
 // Attach to worksite edit modal city field
 attachCityAutocomplete(
